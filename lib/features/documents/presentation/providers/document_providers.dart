@@ -1,3 +1,4 @@
+import 'dart:typed_data';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../core/sync/sync_engine.dart';
 import '../../data/datasources/document_local_datasource.dart';
@@ -47,14 +48,18 @@ class DocumentListNotifier extends StateNotifier<AsyncValue<List<DocumentEntity>
     );
   }
 
-  Future<void> addDocument(DocumentEntity document) async {
+  Future<bool> addDocument(DocumentEntity document) async {
     final result = await _repository.addDocument(document);
-    result.fold(
+    return result.fold(
       (savedDoc) {
         final currentList = state.value ?? [];
         state = AsyncValue.data([savedDoc, ...currentList.where((d) => d.id != savedDoc.id)]);
+        return true;
       },
-      (failure) => state = AsyncValue.error(failure.message, StackTrace.current),
+      (failure) {
+        state = AsyncValue.error(failure.message, StackTrace.current);
+        return false;
+      },
     );
   }
 
@@ -66,6 +71,31 @@ class DocumentListNotifier extends StateNotifier<AsyncValue<List<DocumentEntity>
         state = AsyncValue.data(currentList.where((d) => d.id != id).toList());
       },
       (failure) => state = AsyncValue.error(failure.message, StackTrace.current),
+    );
+  }
+
+  Future<String?> uploadFile({
+    required String fileName,
+    required Uint8List bytes,
+    required String mimeType,
+  }) async {
+    final result = await _repository.uploadFile(
+      workspaceId: _workspaceId,
+      fileName: fileName,
+      bytes: bytes,
+      mimeType: mimeType,
+    );
+    return result.fold(
+      (path) => path,
+      (_) => null,
+    );
+  }
+
+  Future<String?> getDownloadUrl(String storagePath) async {
+    final result = await _repository.getDownloadUrl(storagePath);
+    return result.fold(
+      (url) => url,
+      (_) => null,
     );
   }
 }

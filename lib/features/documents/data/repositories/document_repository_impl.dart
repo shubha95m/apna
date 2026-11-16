@@ -1,3 +1,4 @@
+import 'dart:typed_data';
 import '../../../../core/errors/failures.dart';
 import '../../../../core/result/result.dart';
 import '../../../../core/sync/sync_engine.dart';
@@ -25,17 +26,11 @@ class DocumentRepositoryImpl implements DocumentRepository {
     try {
       // 1. Fetch from live Supabase remote
       final remoteDocs = await _remoteDataSource.getDocuments(workspaceId);
-      if (remoteDocs.isNotEmpty) {
-        // Cache to local
-        for (final doc in remoteDocs) {
-          await _localDataSource.saveDocument(doc);
-        }
-        return Success(remoteDocs);
+      // Cache to local
+      for (final doc in remoteDocs) {
+        await _localDataSource.saveDocument(doc);
       }
-
-      // 2. Fallback to local
-      final localDocs = await _localDataSource.getDocuments(workspaceId);
-      return Success(localDocs);
+      return Success(remoteDocs);
     } catch (_) {
       // Offline fallback
       try {
@@ -105,6 +100,42 @@ class DocumentRepositoryImpl implements DocumentRepository {
       return const Success(null);
     } catch (e) {
       return Failure(DatabaseFailure('Failed to delete document: $e'));
+    }
+  }
+
+  @override
+  Future<Result<String, AppFailure>> uploadFile({
+    required String workspaceId,
+    required String fileName,
+    required Uint8List bytes,
+    required String mimeType,
+  }) async {
+    try {
+      final path = await _remoteDataSource.uploadFile(
+        workspaceId: workspaceId,
+        fileName: fileName,
+        bytes: bytes,
+        mimeType: mimeType,
+      );
+      if (path != null) {
+        return Success(path);
+      }
+      return const Failure(DatabaseFailure('Supabase not configured for upload'));
+    } catch (e) {
+      return Failure(DatabaseFailure('Failed to upload document: $e'));
+    }
+  }
+
+  @override
+  Future<Result<String, AppFailure>> getDownloadUrl(String storagePath) async {
+    try {
+      final url = await _remoteDataSource.getDownloadUrl(storagePath);
+      if (url != null) {
+        return Success(url);
+      }
+      return const Failure(DatabaseFailure('Could not resolve download URL'));
+    } catch (e) {
+      return Failure(DatabaseFailure('Failed to get download URL: $e'));
     }
   }
 }

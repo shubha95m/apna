@@ -36,6 +36,7 @@ class DocumentEntity {
   final int? fileSizeBytes;
   final String? mimeType;
   final String? localFilePath;
+  final String? storagePath;
   final DateTime createdAt;
   final DateTime updatedAt;
   final DateTime? deletedAt;
@@ -52,6 +53,7 @@ class DocumentEntity {
     this.fileSizeBytes,
     this.mimeType,
     this.localFilePath,
+    this.storagePath,
     required this.createdAt,
     required this.updatedAt,
     this.deletedAt,

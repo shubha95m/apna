@@ -58,6 +58,7 @@ class LocalDatabase {
               file_size_bytes INTEGER,
               mime_type TEXT,
               local_file_path TEXT,
+              storage_path TEXT,
               created_at TEXT NOT NULL,
               updated_at TEXT NOT NULL,
               deleted_at TEXT
