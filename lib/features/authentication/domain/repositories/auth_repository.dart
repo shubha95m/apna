@@ -14,6 +14,10 @@ abstract interface class AuthRepository {
     required String password,
     String? fullName,
   });
+  Future<Result<UserEntity, AppFailure>> signInOffline({
+    required String email,
+    String? fullName,
+  });
   Future<Result<void, AppFailure>> sendMagicLinkOtp(String email);
   Future<Result<UserEntity, AppFailure>> verifyMagicLinkOtp({
     required String email,

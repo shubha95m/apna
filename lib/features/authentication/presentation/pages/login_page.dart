@@ -15,8 +15,9 @@ class LoginPage extends ConsumerStatefulWidget {
 class _LoginPageState extends ConsumerState<LoginPage> {
   final _formKey = GlobalKey<FormState>();
   final _emailController = TextEditingController(text: 'shubham@family.apna');
-  final _passwordController = TextEditingController(text: 'ApnaPass123!');
+  final _passwordController = TextEditingController(text: '123123');
   bool _obscurePassword = true;
+  String? _errorMessage;
 
   @override
   void dispose() {
@@ -28,31 +29,54 @@ class _LoginPageState extends ConsumerState<LoginPage> {
   Future<void> _handleLogin() async {
     if (!_formKey.currentState!.validate()) return;
 
+    setState(() => _errorMessage = null);
+    final email = _emailController.text.trim();
+    final password = _passwordController.text.trim();
+
     final success = await ref.read(authControllerProvider.notifier).login(
-          _emailController.text.trim(),
-          _passwordController.text.trim(),
+          email,
+          password,
         );
 
     if (!mounted) return;
     if (success) {
       context.go('/');
     } else {
-      final error = ref.read(authControllerProvider).error?.toString() ?? 'Invalid credentials';
+      final rawError = ref.read(authControllerProvider).error?.toString() ?? 'Invalid credentials';
+      String userFriendlyMsg = rawError;
+      if (rawError.contains('invalid_credentials') || rawError.contains('Invalid login credentials')) {
+        userFriendlyMsg = 'Invalid cloud credentials. The user account has not yet been confirmed in Supabase.';
+      } else if (rawError.contains('rate_limit') || rawError.contains('over_email_send_rate_limit')) {
+        userFriendlyMsg = 'Supabase email rate limit exceeded. You can use Offline Local Vault mode.';
+      }
+      setState(() => _errorMessage = userFriendlyMsg);
+      ScaffoldMessenger.of(context).hideCurrentSnackBar();
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(error), backgroundColor: ApnaColors.error),
+        SnackBar(content: Text(userFriendlyMsg), backgroundColor: ApnaColors.error),
       );
     }
   }
 
+  Future<void> _enterOfflineVault({String? email}) async {
+    setState(() => _errorMessage = null);
+    final targetEmail = (email != null && email.isNotEmpty) ? email : _emailController.text.trim();
+    final effectiveEmail = targetEmail.isNotEmpty ? targetEmail : 'shubham@family.apna';
+    final success = await ref.read(authControllerProvider.notifier).loginOffline(
+          email: effectiveEmail,
+          fullName: effectiveEmail.contains('shubham') ? 'Shubham Sharma' : effectiveEmail.split('@').first,
+        );
+    if (!mounted) return;
+    if (success) {
+      context.go('/');
+    }
+  }
+
   Future<void> _handleBiometric() async {
+    setState(() => _errorMessage = null);
     final authenticated = await ref.read(authControllerProvider.notifier).unlockWithBiometrics();
     if (!mounted) return;
     if (authenticated) {
-      await ref.read(authControllerProvider.notifier).login(
-            _emailController.text.trim(),
-            _passwordController.text.trim(),
-          );
-      if (mounted) context.go('/');
+      await _enterOfflineVault();
     }
   }
 
@@ -148,6 +172,50 @@ class _LoginPageState extends ConsumerState<LoginPage> {
                       ),
                       const SizedBox(height: 22),
 
+                      // Inline Error Notification Banner
+                      if (_errorMessage != null) ...[
+                        Container(
+                          padding: const EdgeInsets.all(12),
+                          decoration: BoxDecoration(
+                            color: ApnaColors.error.withOpacity(0.08),
+                            borderRadius: BorderRadius.circular(12),
+                            border: Border.all(color: ApnaColors.error.withOpacity(0.3)),
+                          ),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Row(
+                                children: [
+                                  const Icon(Icons.error_outline_rounded, size: 18, color: ApnaColors.error),
+                                  const SizedBox(width: 8),
+                                  Expanded(
+                                    child: Text(
+                                      _errorMessage!,
+                                      style: const TextStyle(color: ApnaColors.error, fontSize: 13, fontWeight: FontWeight.w600),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                              const SizedBox(height: 10),
+                              SizedBox(
+                                width: double.infinity,
+                                height: 36,
+                                child: OutlinedButton.icon(
+                                  icon: const Icon(Icons.lock_open_rounded, size: 16, color: ApnaColors.primary),
+                                  label: const Text('Enter in Offline Local Vault Mode', style: TextStyle(color: ApnaColors.primary, fontSize: 12.5, fontWeight: FontWeight.w600)),
+                                  style: OutlinedButton.styleFrom(
+                                    side: const BorderSide(color: ApnaColors.primary),
+                                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                                  ),
+                                  onPressed: () => _enterOfflineVault(email: _emailController.text.trim()),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                        const SizedBox(height: 16),
+                      ],
+
                       // Submit Button
                       SizedBox(
                         width: double.infinity,
@@ -175,6 +243,22 @@ class _LoginPageState extends ConsumerState<LoginPage> {
                           label: const Text('Unlock with Biometrics (Touch / Face ID)', style: TextStyle(color: ApnaColors.accentDark, fontWeight: FontWeight.w600)),
                           style: OutlinedButton.styleFrom(
                             side: const BorderSide(color: ApnaColors.accentLight),
+                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: 12),
+
+                      // Quick Demo / Local Vault Button
+                      SizedBox(
+                        width: double.infinity,
+                        height: 46,
+                        child: TextButton.icon(
+                          onPressed: isLoading ? null : () => _enterOfflineVault(),
+                          icon: const Icon(Icons.bolt_rounded, size: 20, color: ApnaColors.accentDark),
+                          label: const Text('Quick Demo / Enter Local Vault', style: TextStyle(color: ApnaColors.accentDark, fontWeight: FontWeight.w600, fontSize: 14)),
+                          style: TextButton.styleFrom(
+                            backgroundColor: ApnaColors.accentLight.withOpacity(0.18),
                             shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                           ),
                         ),

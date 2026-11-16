@@ -24,7 +24,8 @@ class AuthRepositoryImpl implements AuthRepository {
       final user = await _dataSource.signInWithPassword(email: email, password: password);
       return Success(user);
     } catch (e) {
-      return Failure(AuthFailure('Login failed: ${e.toString()}'));
+      final msg = e.toString().replaceFirst('Exception: ', '').replaceFirst('AuthException(message: ', '').replaceFirst(')', '');
+      return Failure(AuthFailure(msg));
     }
   }
 
@@ -38,7 +39,21 @@ class AuthRepositoryImpl implements AuthRepository {
       final user = await _dataSource.signUp(email: email, password: password, fullName: fullName);
       return Success(user);
     } catch (e) {
-      return Failure(AuthFailure('Sign up failed: ${e.toString()}'));
+      final msg = e.toString().replaceFirst('Exception: ', '').replaceFirst('AuthException(message: ', '').replaceFirst(')', '');
+      return Failure(AuthFailure(msg));
+    }
+  }
+
+  @override
+  Future<Result<UserEntity, AppFailure>> signInOffline({
+    required String email,
+    String? fullName,
+  }) async {
+    try {
+      final user = await _dataSource.signInOffline(email: email, fullName: fullName);
+      return Success(user);
+    } catch (e) {
+      return Failure(AuthFailure('Offline authentication failed: ${e.toString()}'));
     }
   }
 

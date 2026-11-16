@@ -57,6 +57,24 @@ class AuthController extends StateNotifier<AsyncValue<UserEntity?>> {
     );
   }
 
+  Future<bool> loginOffline({required String email, String? fullName}) async {
+    state = const AsyncValue.loading();
+    final result = await _repository.signInOffline(
+      email: email,
+      fullName: fullName,
+    );
+    return result.fold(
+      (user) {
+        state = AsyncValue.data(user);
+        return true;
+      },
+      (failure) {
+        state = AsyncValue.error(failure.message, StackTrace.current);
+        return false;
+      },
+    );
+  }
+
   Future<void> logout() async {
     state = const AsyncValue.loading();
     await _repository.signOut();

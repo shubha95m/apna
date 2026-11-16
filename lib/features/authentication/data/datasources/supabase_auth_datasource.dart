@@ -10,6 +10,7 @@ abstract interface class SupabaseAuthDataSource {
   UserEntity? get currentUser;
   Future<UserEntity> signInWithPassword({required String email, required String password});
   Future<UserEntity> signUp({required String email, required String password, String? fullName});
+  Future<UserEntity> signInOffline({required String email, String? fullName});
   Future<void> sendOtp(String email);
   Future<UserEntity> verifyOtp({required String email, required String token});
   Future<void> signOut();
@@ -137,6 +138,22 @@ class SupabaseAuthDataSourceImpl implements SupabaseAuthDataSource {
       id: 'usr-${DateTime.now().millisecondsSinceEpoch}',
       email: email,
       fullName: fullName ?? 'Family Member',
+      createdAt: DateTime.now(),
+    );
+    await _secureStorage.write(key: 'apna_session_user_email', value: email);
+    _authStreamController.add(_cachedUser);
+    return _cachedUser!;
+  }
+
+  @override
+  Future<UserEntity> signInOffline({required String email, String? fullName}) async {
+    final effectiveName = (fullName != null && fullName.isNotEmpty)
+        ? fullName
+        : (email.contains('shubham') ? 'Shubham Sharma' : email.split('@').first);
+    _cachedUser = UserEntity(
+      id: 'usr-${email.split('@').first.replaceAll(RegExp(r'[^a-zA-Z0-9]'), '')}-001',
+      email: email,
+      fullName: effectiveName,
       createdAt: DateTime.now(),
     );
     await _secureStorage.write(key: 'apna_session_user_email', value: email);

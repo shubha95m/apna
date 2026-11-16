@@ -18,6 +18,7 @@ class _RegisterPageState extends ConsumerState<RegisterPage> {
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
   bool _obscurePassword = true;
+  String? _errorMessage;
 
   @override
   void dispose() {
@@ -30,10 +31,15 @@ class _RegisterPageState extends ConsumerState<RegisterPage> {
   Future<void> _handleRegister() async {
     if (!_formKey.currentState!.validate()) return;
 
+    setState(() => _errorMessage = null);
+    final email = _emailController.text.trim();
+    final password = _passwordController.text.trim();
+    final name = _nameController.text.trim();
+
     final success = await ref.read(authControllerProvider.notifier).register(
-          _emailController.text.trim(),
-          _passwordController.text.trim(),
-          _nameController.text.trim(),
+          email,
+          password,
+          name,
         );
 
     if (!mounted) return;
@@ -43,10 +49,32 @@ class _RegisterPageState extends ConsumerState<RegisterPage> {
       );
       context.go('/');
     } else {
-      final error = ref.read(authControllerProvider).error?.toString() ?? 'Registration failed';
+      final rawError = ref.read(authControllerProvider).error?.toString() ?? 'Registration failed';
+      String userFriendlyMsg = rawError;
+      if (rawError.contains('over_email_send_rate_limit') || rawError.contains('rate limit')) {
+        userFriendlyMsg = 'Supabase email send rate limit exceeded. You can proceed with Local Offline Workspace.';
+      } else if (rawError.contains('email_address_invalid')) {
+        userFriendlyMsg = 'Supabase rejected email domain. You can proceed with Local Offline Workspace.';
+      }
+      setState(() => _errorMessage = userFriendlyMsg);
+      ScaffoldMessenger.of(context).hideCurrentSnackBar();
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(error), backgroundColor: ApnaColors.error),
+        SnackBar(content: Text(userFriendlyMsg), backgroundColor: ApnaColors.error),
       );
+    }
+  }
+
+  Future<void> _createOfflineWorkspace() async {
+    setState(() => _errorMessage = null);
+    final email = _emailController.text.trim().isNotEmpty ? _emailController.text.trim() : 'family@apna.local';
+    final name = _nameController.text.trim().isNotEmpty ? _nameController.text.trim() : 'Family Member';
+    final success = await ref.read(authControllerProvider.notifier).loginOffline(
+          email: email,
+          fullName: name,
+        );
+    if (!mounted) return;
+    if (success) {
+      context.go('/');
     }
   }
 
@@ -139,6 +167,50 @@ class _RegisterPageState extends ConsumerState<RegisterPage> {
                         },
                       ),
                       const SizedBox(height: 24),
+
+                      // Inline Error Banner
+                      if (_errorMessage != null) ...[
+                        Container(
+                          padding: const EdgeInsets.all(12),
+                          decoration: BoxDecoration(
+                            color: ApnaColors.error.withOpacity(0.08),
+                            borderRadius: BorderRadius.circular(12),
+                            border: Border.all(color: ApnaColors.error.withOpacity(0.3)),
+                          ),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Row(
+                                children: [
+                                  const Icon(Icons.error_outline_rounded, size: 18, color: ApnaColors.error),
+                                  const SizedBox(width: 8),
+                                  Expanded(
+                                    child: Text(
+                                      _errorMessage!,
+                                      style: const TextStyle(color: ApnaColors.error, fontSize: 13, fontWeight: FontWeight.w600),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                              const SizedBox(height: 10),
+                              SizedBox(
+                                width: double.infinity,
+                                height: 36,
+                                child: OutlinedButton.icon(
+                                  icon: const Icon(Icons.folder_shared_outlined, size: 16, color: ApnaColors.primary),
+                                  label: const Text('Proceed with Local Offline Workspace', style: TextStyle(color: ApnaColors.primary, fontSize: 12.5, fontWeight: FontWeight.w600)),
+                                  style: OutlinedButton.styleFrom(
+                                    side: const BorderSide(color: ApnaColors.primary),
+                                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                                  ),
+                                  onPressed: _createOfflineWorkspace,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                        const SizedBox(height: 16),
+                      ],
 
                       SizedBox(
                         width: double.infinity,

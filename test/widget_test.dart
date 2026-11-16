@@ -80,4 +80,15 @@ class MockAuthController extends StateNotifier<AsyncValue<UserEntity?>>
   Future<bool> unlockWithBiometrics() async {
     return true;
   }
+
+  @override
+  Future<bool> loginOffline({required String email, String? fullName}) async {
+    state = AsyncValue.data(UserEntity(
+      id: 'usr-1',
+      email: email,
+      fullName: fullName ?? 'Shubham Sharma',
+      createdAt: DateTime.now(),
+    ));
+    return true;
+  }
 }
