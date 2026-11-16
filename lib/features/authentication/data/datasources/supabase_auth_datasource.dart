@@ -19,7 +19,12 @@ abstract interface class SupabaseAuthDataSource {
 
 class SupabaseAuthDataSourceImpl implements SupabaseAuthDataSource {
   final _localAuth = LocalAuthentication();
-  final _secureStorage = const FlutterSecureStorage();
+  final _secureStorage = const FlutterSecureStorage(
+    aOptions: AndroidOptions(
+      encryptedSharedPreferences: true,
+      resetOnError: true,
+    ),
+  );
   final _authStreamController = StreamController<UserEntity?>.broadcast();
   UserEntity? _cachedUser;
 
@@ -62,8 +67,12 @@ class SupabaseAuthDataSourceImpl implements SupabaseAuthDataSource {
 
     // Offline / Local Vault Mode
     try {
-      final savedEmail = await _secureStorage.read(key: 'apna_session_user_email');
-      final savedName = await _secureStorage.read(key: 'apna_session_user_name');
+      final savedEmail = await _secureStorage
+          .read(key: 'apna_session_user_email')
+          .timeout(const Duration(seconds: 2), onTimeout: () => null);
+      final savedName = await _secureStorage
+          .read(key: 'apna_session_user_name')
+          .timeout(const Duration(seconds: 2), onTimeout: () => null);
       if (savedEmail != null) {
         final emailPart = savedEmail.split('@').first;
         final cleanId = emailPart.replaceAll(RegExp(r'[^a-zA-Z0-9]'), '');

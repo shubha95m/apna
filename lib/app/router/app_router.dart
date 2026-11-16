@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import '../../features/authentication/domain/entities/user_entity.dart';
 import '../../features/authentication/presentation/pages/login_page.dart';
 import '../../features/authentication/presentation/pages/register_page.dart';
 import '../../features/authentication/presentation/providers/auth_providers.dart';
@@ -16,12 +17,17 @@ import '../../features/warranties/presentation/pages/warranties_page.dart';
 import '../../shared/widgets/responsive_scaffold.dart';
 
 final appRouterProvider = Provider<GoRouter>((ref) {
-  final workspaceName = ref.watch(activeWorkspaceNameProvider);
-  final authUser = ref.watch(authControllerProvider).valueOrNull;
+  final authNotifier = ValueNotifier<UserEntity?>(ref.read(authControllerProvider).valueOrNull);
+  ref.listen<AsyncValue<UserEntity?>>(authControllerProvider, (_, next) {
+    authNotifier.value = next.valueOrNull;
+  });
+  ref.onDispose(authNotifier.dispose);
 
   return GoRouter(
     initialLocation: '/',
+    refreshListenable: authNotifier,
     redirect: (context, state) {
+      final authUser = authNotifier.value;
       final isAuthRoute = state.uri.path == '/login' || state.uri.path == '/register';
       if (authUser == null && !isAuthRoute) {
         return '/login';
@@ -58,27 +64,32 @@ final appRouterProvider = Provider<GoRouter>((ref) {
             return 0;
           }
 
-          return ApnaResponsiveScaffold(
-            selectedIndex: calculateIndex(state.uri.path),
-            workspaceName: workspaceName,
-            onWorkspaceToggle: () {
-              final current = ref.read(activeWorkspaceNameProvider);
-              if (current == 'Family') {
-                ref.read(activeWorkspaceNameProvider.notifier).state = 'Personal';
-                ref.read(activeWorkspaceIdProvider.notifier).state = 'c0eebc99-9c0b-4ef8-bb6d-6bb9bd380a01';
-              } else {
-                ref.read(activeWorkspaceNameProvider.notifier).state = 'Family';
-                ref.read(activeWorkspaceIdProvider.notifier).state = 'c0eebc99-9c0b-4ef8-bb6d-6bb9bd380a02';
-              }
+          return Consumer(
+            builder: (context, ref, _) {
+              final workspaceName = ref.watch(activeWorkspaceNameProvider);
+              return ApnaResponsiveScaffold(
+                selectedIndex: calculateIndex(state.uri.path),
+                workspaceName: workspaceName,
+                onWorkspaceToggle: () {
+                  final current = ref.read(activeWorkspaceNameProvider);
+                  if (current == 'Family') {
+                    ref.read(activeWorkspaceNameProvider.notifier).state = 'Personal';
+                    ref.read(activeWorkspaceIdProvider.notifier).state = 'c0eebc99-9c0b-4ef8-bb6d-6bb9bd380a01';
+                  } else {
+                    ref.read(activeWorkspaceNameProvider.notifier).state = 'Family';
+                    ref.read(activeWorkspaceIdProvider.notifier).state = 'c0eebc99-9c0b-4ef8-bb6d-6bb9bd380a02';
+                  }
+                },
+                onSignOut: () => ref.read(authControllerProvider.notifier).signOut(),
+                onDestinationSelected: (index) {
+                  if (index < ApnaResponsiveScaffold.destinations.length) {
+                    final targetRoute = ApnaResponsiveScaffold.destinations[index].route;
+                    context.go(targetRoute);
+                  }
+                },
+                body: child,
+              );
             },
-            onSignOut: () => ref.read(authControllerProvider.notifier).signOut(),
-            onDestinationSelected: (index) {
-              if (index < ApnaResponsiveScaffold.destinations.length) {
-                final targetRoute = ApnaResponsiveScaffold.destinations[index].route;
-                context.go(targetRoute);
-              }
-            },
-            body: child,
           );
         },
         routes: [

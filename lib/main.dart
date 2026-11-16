@@ -10,7 +10,7 @@ void main() async {
 
   // 1. Load gitignored .env file if available
   try {
-    await dotenv.load(fileName: '.env');
+    await dotenv.load(fileName: '.env').timeout(const Duration(seconds: 2));
   } catch (e) {
     debugPrint('.env load notice (using production vault defaults): $e');
   }
@@ -21,7 +21,7 @@ void main() async {
       await Supabase.initialize(
         url: SupabaseConfig.supabaseUrl,
         anonKey: SupabaseConfig.supabaseAnonKey,
-      );
+      ).timeout(const Duration(seconds: 3));
     } catch (e) {
       debugPrint('Supabase initialization notice: $e');
     }
