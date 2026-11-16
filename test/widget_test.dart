@@ -39,7 +39,7 @@ void main() {
     );
     await tester.pumpAndSettle();
 
-    expect(find.text('Good Morning, Shubham'), findsOneWidget);
+    expect(find.textContaining('Shubham'), findsOneWidget);
     expect(find.text('Pending Tasks'), findsOneWidget);
     expect(find.text('Upcoming Bills'), findsOneWidget);
   });
@@ -88,6 +88,9 @@ class MockAuthController extends StateNotifier<AsyncValue<UserEntity?>>
   Future<void> logout() async {
     state = const AsyncValue.data(null);
   }
+
+  @override
+  Future<void> signOut() => logout();
 
   @override
   Future<bool> unlockWithBiometrics() async {

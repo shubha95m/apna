@@ -7,6 +7,7 @@ import 'package:apna/app/theme/app_typography.dart';
 import 'package:apna/core/integrations/upi_launcher.dart';
 import 'package:apna/shared/widgets/quick_action_item.dart';
 import 'package:apna/shared/widgets/stat_badge.dart';
+import '../../authentication/presentation/providers/auth_providers.dart';
 import '../../bills/domain/entities/bill_entity.dart';
 import '../../bills/presentation/providers/bill_providers.dart';
 import '../../documents/domain/entities/document_entity.dart';
@@ -51,16 +52,25 @@ class DashboardPage extends ConsumerWidget {
                   return Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      Expanded(child: _buildGreeting(workspaceName)),
+                      Expanded(child: _buildGreeting(context, ref, workspaceName)),
                       const SizedBox(width: 12),
                       _buildSearchBar(),
+                      const SizedBox(width: 12),
+                      _buildUserProfileButton(context, ref, workspaceName),
                     ],
                   );
                 }
                 return Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    _buildGreeting(workspaceName),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Expanded(child: _buildGreeting(context, ref, workspaceName)),
+                        _buildUserProfileButton(context, ref, workspaceName),
+                      ],
+                    ),
                     const SizedBox(height: 12),
                     _buildSearchBar(),
                   ],
@@ -198,7 +208,21 @@ class DashboardPage extends ConsumerWidget {
     );
   }
 
-  Widget _buildGreeting(String workspaceName) {
+  Widget _buildGreeting(BuildContext context, WidgetRef ref, String workspaceName) {
+    final hour = DateTime.now().hour;
+    final timeGreeting = hour < 12
+        ? 'Good Morning'
+        : (hour < 17 ? 'Good Afternoon' : 'Good Evening');
+
+    final authUser = ref.watch(authControllerProvider).valueOrNull;
+    final fullName = authUser?.fullName?.trim();
+    final rawName = (fullName != null && fullName.isNotEmpty)
+        ? fullName.split(' ').first
+        : (authUser?.email.isNotEmpty == true ? authUser!.email.split('@').first : 'User');
+    final capitalizedName = rawName.isNotEmpty
+        ? '${rawName[0].toUpperCase()}${rawName.length > 1 ? rawName.substring(1) : ''}'
+        : 'User';
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -207,7 +231,7 @@ class DashboardPage extends ConsumerWidget {
           spacing: 8,
           runSpacing: 4,
           children: [
-            const Text('Good Morning, Shubham', style: ApnaTypography.headingLarge),
+            Text('$timeGreeting, $capitalizedName', style: ApnaTypography.headingLarge),
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
               decoration: BoxDecoration(
@@ -231,6 +255,134 @@ class DashboardPage extends ConsumerWidget {
           style: ApnaTypography.bodySmall,
         ),
       ],
+    );
+  }
+
+  Widget _buildUserProfileButton(BuildContext context, WidgetRef ref, String workspaceName) {
+    final authUser = ref.watch(authControllerProvider).valueOrNull;
+    final email = authUser?.email ?? 'user@apna.family';
+    final fullName = authUser?.fullName?.trim() ?? 'Apna User';
+    final initial = fullName.isNotEmpty ? fullName[0].toUpperCase() : 'U';
+
+    return PopupMenuButton<String>(
+      tooltip: 'Account & Settings',
+      offset: const Offset(0, 48),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+      elevation: 6,
+      child: Container(
+        padding: const EdgeInsets.all(3),
+        decoration: BoxDecoration(
+          shape: BoxShape.circle,
+          border: Border.all(color: ApnaColors.primary.withValues(alpha: 0.3), width: 1.5),
+        ),
+        child: CircleAvatar(
+          radius: 18,
+          backgroundColor: ApnaColors.primary,
+          child: Text(
+            initial,
+            style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 15),
+          ),
+        ),
+      ),
+      itemBuilder: (ctx) => [
+        PopupMenuItem<String>(
+          enabled: false,
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  CircleAvatar(
+                    radius: 14,
+                    backgroundColor: ApnaColors.primaryLight,
+                    child: Text(initial, style: const TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.bold)),
+                  ),
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          fullName,
+                          style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14, color: ApnaColors.textPrimary),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                        Text(
+                          email,
+                          style: const TextStyle(fontSize: 12, color: ApnaColors.textSecondary),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 10),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                decoration: BoxDecoration(
+                  color: ApnaColors.surfaceSubtle,
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    const Icon(Icons.shield_outlined, size: 14, color: ApnaColors.accentDark),
+                    const SizedBox(width: 6),
+                    Text(
+                      'Workspace: $workspaceName',
+                      style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w600, color: ApnaColors.accentDark),
+                    ),
+                  ],
+                ),
+              ),
+              const Divider(height: 16),
+            ],
+          ),
+        ),
+        PopupMenuItem<String>(
+          value: 'toggle_workspace',
+          child: Row(
+            children: [
+              const Icon(Icons.swap_horiz_rounded, size: 20, color: ApnaColors.primary),
+              const SizedBox(width: 12),
+              Text(
+                workspaceName == 'Family' ? 'Switch to Personal' : 'Switch to Family',
+                style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w500),
+              ),
+            ],
+          ),
+        ),
+        const PopupMenuItem<String>(
+          value: 'sign_out',
+          child: Row(
+            children: [
+              Icon(Icons.logout_rounded, size: 20, color: ApnaColors.error),
+              SizedBox(width: 12),
+              Text(
+                'Sign Out',
+                style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: ApnaColors.error),
+              ),
+            ],
+          ),
+        ),
+      ],
+      onSelected: (value) async {
+        if (value == 'toggle_workspace') {
+          final current = ref.read(activeWorkspaceNameProvider);
+          if (current == 'Family') {
+            ref.read(activeWorkspaceNameProvider.notifier).state = 'Personal';
+            ref.read(activeWorkspaceIdProvider.notifier).state = 'c0eebc99-9c0b-4ef8-bb6d-6bb9bd380a01';
+          } else {
+            ref.read(activeWorkspaceNameProvider.notifier).state = 'Family';
+            ref.read(activeWorkspaceIdProvider.notifier).state = 'c0eebc99-9c0b-4ef8-bb6d-6bb9bd380a02';
+          }
+        } else if (value == 'sign_out') {
+          await ref.read(authControllerProvider.notifier).signOut();
+        }
+      },
     );
   }
 

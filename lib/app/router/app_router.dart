@@ -71,6 +71,7 @@ final appRouterProvider = Provider<GoRouter>((ref) {
                 ref.read(activeWorkspaceIdProvider.notifier).state = 'c0eebc99-9c0b-4ef8-bb6d-6bb9bd380a02';
               }
             },
+            onSignOut: () => ref.read(authControllerProvider.notifier).signOut(),
             onDestinationSelected: (index) {
               if (index < ApnaResponsiveScaffold.destinations.length) {
                 final targetRoute = ApnaResponsiveScaffold.destinations[index].route;

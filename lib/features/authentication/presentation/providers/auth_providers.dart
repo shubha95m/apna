@@ -81,6 +81,8 @@ class AuthController extends StateNotifier<AsyncValue<UserEntity?>> {
     state = const AsyncValue.data(null);
   }
 
+  Future<void> signOut() => logout();
+
   Future<bool> unlockWithBiometrics() async {
     final result = await _repository.authenticateWithBiometrics();
     return result.dataOrNull ?? false;

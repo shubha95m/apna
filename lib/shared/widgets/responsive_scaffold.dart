@@ -20,6 +20,7 @@ class ApnaResponsiveScaffold extends StatelessWidget {
   final ValueChanged<int> onDestinationSelected;
   final String workspaceName;
   final VoidCallback onWorkspaceToggle;
+  final VoidCallback? onSignOut;
 
   const ApnaResponsiveScaffold({
     super.key,
@@ -28,6 +29,7 @@ class ApnaResponsiveScaffold extends StatelessWidget {
     required this.onDestinationSelected,
     required this.workspaceName,
     required this.onWorkspaceToggle,
+    this.onSignOut,
   });
 
   static const List<NavDestinationItem> destinations = [
@@ -202,7 +204,7 @@ class ApnaResponsiveScaffold extends StatelessWidget {
             dense: true,
             leading: const Icon(Icons.logout_rounded, size: 18, color: ApnaColors.error),
             title: const Text('Sign Out', style: TextStyle(color: ApnaColors.error, fontSize: 13, fontWeight: FontWeight.w600)),
-            onTap: () {
+            onTap: onSignOut ?? () {
               ScaffoldMessenger.of(context).showSnackBar(
                 const SnackBar(content: Text('Signing out...')),
               );

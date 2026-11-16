@@ -123,7 +123,7 @@ class _RegisterPageState extends ConsumerState<RegisterPage> {
                         controller: _nameController,
                         decoration: InputDecoration(
                           labelText: 'Full Name',
-                          hintText: 'Shubham Sharma',
+                          hintText: 'e.g. Rahul Sharma',
                           prefixIcon: const Icon(Icons.person_outline_rounded, size: 20),
                           border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
                         ),
@@ -136,7 +136,7 @@ class _RegisterPageState extends ConsumerState<RegisterPage> {
                         keyboardType: TextInputType.emailAddress,
                         decoration: InputDecoration(
                           labelText: 'Email Address',
-                          hintText: 'name@family.apna',
+                          hintText: 'e.g. rahul@example.com',
                           prefixIcon: const Icon(Icons.email_outlined, size: 20),
                           border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
                         ),
