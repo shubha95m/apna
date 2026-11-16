@@ -59,3 +59,4 @@ class DocumentEntity {
 
   bool get isDeleted => deletedAt != null;
 }
+

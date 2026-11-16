@@ -28,3 +28,4 @@ class ValidationFailure extends AppFailure {
 class SyncConflictFailure extends AppFailure {
   const SyncConflictFailure(super.message);
 }
+

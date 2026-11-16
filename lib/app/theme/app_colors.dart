@@ -44,3 +44,4 @@ class ApnaColors {
   static const Color categoryExpense = Color(0xFF06B6D4);
   static const Color categoryHealth = Color(0xFFEC4899);
 }
+

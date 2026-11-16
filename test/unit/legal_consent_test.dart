@@ -34,3 +34,4 @@ void main() {
     expect(revokedConsent.isCompliant, isFalse);
   });
 }
+

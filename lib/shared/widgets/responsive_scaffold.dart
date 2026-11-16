@@ -198,6 +198,16 @@ class ApnaResponsiveScaffold extends StatelessWidget {
               ],
             ),
           ),
+          ListTile(
+            dense: true,
+            leading: const Icon(Icons.logout_rounded, size: 18, color: ApnaColors.error),
+            title: const Text('Sign Out', style: TextStyle(color: ApnaColors.error, fontSize: 13, fontWeight: FontWeight.w600)),
+            onTap: () {
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(content: Text('Signing out...')),
+              );
+            },
+          ),
         ],
       ),
     );
@@ -218,3 +228,4 @@ class ApnaResponsiveScaffold extends StatelessWidget {
     );
   }
 }
+

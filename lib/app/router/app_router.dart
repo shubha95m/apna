@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import '../../features/authentication/presentation/pages/login_page.dart';
+import '../../features/authentication/presentation/pages/register_page.dart';
+import '../../features/authentication/presentation/providers/auth_providers.dart';
 import '../../features/dashboard/presentation/dashboard_page.dart';
 import '../../features/documents/presentation/pages/add_document_page.dart';
 import '../../features/documents/presentation/pages/documents_page.dart';
@@ -9,10 +12,29 @@ import '../../shared/widgets/responsive_scaffold.dart';
 
 final appRouterProvider = Provider<GoRouter>((ref) {
   final workspaceName = ref.watch(activeWorkspaceNameProvider);
+  final authUser = ref.watch(authControllerProvider).valueOrNull;
 
   return GoRouter(
     initialLocation: '/',
+    redirect: (context, state) {
+      final isAuthRoute = state.uri.path == '/login' || state.uri.path == '/register';
+      if (authUser == null && !isAuthRoute) {
+        return '/login';
+      }
+      if (authUser != null && isAuthRoute) {
+        return '/';
+      }
+      return null;
+    },
     routes: [
+      GoRoute(
+        path: '/login',
+        builder: (context, state) => const LoginPage(),
+      ),
+      GoRoute(
+        path: '/register',
+        builder: (context, state) => const RegisterPage(),
+      ),
       ShellRoute(
         builder: (context, state, child) {
           int calculateIndex(String path) {

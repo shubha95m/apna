@@ -228,3 +228,4 @@ CREATE POLICY "Expenses: all member" ON public.expenses
 
 CREATE POLICY "Legal Consents: user only" ON public.legal_consents
     FOR ALL USING (auth.uid() = user_id) WITH CHECK (auth.uid() = user_id);
+

@@ -8,3 +8,4 @@ abstract interface class DocumentRepository {
   Future<Result<DocumentEntity, AppFailure>> addDocument(DocumentEntity document);
   Future<Result<void, AppFailure>> deleteDocument(String id);
 }
+

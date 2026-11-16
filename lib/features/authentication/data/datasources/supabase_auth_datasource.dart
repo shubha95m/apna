@@ -1,0 +1,198 @@
+import 'dart:async';
+import 'package:flutter_secure_storage/flutter_secure_storage.dart';
+import 'package:local_auth/local_auth.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
+import '../../../../app/configuration/supabase_config.dart';
+import '../../domain/entities/user_entity.dart';
+
+abstract interface class SupabaseAuthDataSource {
+  Stream<UserEntity?> get authStateChanges;
+  UserEntity? get currentUser;
+  Future<UserEntity> signInWithPassword({required String email, required String password});
+  Future<UserEntity> signUp({required String email, required String password, String? fullName});
+  Future<void> sendOtp(String email);
+  Future<UserEntity> verifyOtp({required String email, required String token});
+  Future<void> signOut();
+  Future<bool> authenticateBiometrics();
+}
+
+class SupabaseAuthDataSourceImpl implements SupabaseAuthDataSource {
+  final _localAuth = LocalAuthentication();
+  final _secureStorage = const FlutterSecureStorage();
+  final _authStreamController = StreamController<UserEntity?>.broadcast();
+  UserEntity? _cachedUser;
+
+  SupabaseAuthDataSourceImpl() {
+    _initialize();
+  }
+
+  Future<void> _initialize() async {
+    if (SupabaseConfig.isConfigured) {
+      try {
+        Supabase.instance.client.auth.onAuthStateChange.listen((data) {
+          final user = data.session?.user;
+          if (user != null) {
+            _cachedUser = UserEntity(
+              id: user.id,
+              email: user.email ?? '',
+              fullName: user.userMetadata?['full_name'] as String?,
+              createdAt: DateTime.parse(user.createdAt),
+            );
+            _authStreamController.add(_cachedUser);
+          } else {
+            _cachedUser = null;
+            _authStreamController.add(null);
+          }
+        });
+        return;
+      } catch (_) {}
+    }
+
+    // Offline / Local Vault Mode
+    final savedEmail = await _secureStorage.read(key: 'apna_session_user_email');
+    if (savedEmail != null) {
+      _cachedUser = UserEntity(
+        id: 'usr-shubham-001',
+        email: savedEmail,
+        fullName: 'Shubham Sharma',
+        createdAt: DateTime.now(),
+      );
+      _authStreamController.add(_cachedUser);
+    }
+  }
+
+  @override
+  Stream<UserEntity?> get authStateChanges => _authStreamController.stream;
+
+  @override
+  UserEntity? get currentUser => _cachedUser;
+
+  @override
+  Future<UserEntity> signInWithPassword({required String email, required String password}) async {
+    if (SupabaseConfig.isConfigured) {
+      final response = await Supabase.instance.client.auth.signInWithPassword(
+        email: email,
+        password: password,
+      );
+      final user = response.user!;
+      _cachedUser = UserEntity(
+        id: user.id,
+        email: user.email ?? email,
+        fullName: user.userMetadata?['full_name'] as String?,
+        createdAt: DateTime.parse(user.createdAt),
+      );
+      await _secureStorage.write(key: 'apna_session_user_email', value: email);
+      _authStreamController.add(_cachedUser);
+      return _cachedUser!;
+    }
+
+    // Offline fallback for family development
+    if (password.length < 6) {
+      throw const AuthException('Password must be at least 6 characters.');
+    }
+
+    _cachedUser = UserEntity(
+      id: 'usr-shubham-001',
+      email: email,
+      fullName: 'Shubham Sharma',
+      createdAt: DateTime.now(),
+    );
+    await _secureStorage.write(key: 'apna_session_user_email', value: email);
+    _authStreamController.add(_cachedUser);
+    return _cachedUser!;
+  }
+
+  @override
+  Future<UserEntity> signUp({required String email, required String password, String? fullName}) async {
+    if (SupabaseConfig.isConfigured) {
+      final response = await Supabase.instance.client.auth.signUp(
+        email: email,
+        password: password,
+        data: {'full_name': fullName ?? ''},
+      );
+      final user = response.user!;
+      _cachedUser = UserEntity(
+        id: user.id,
+        email: user.email ?? email,
+        fullName: fullName,
+        createdAt: DateTime.parse(user.createdAt),
+      );
+      await _secureStorage.write(key: 'apna_session_user_email', value: email);
+      _authStreamController.add(_cachedUser);
+      return _cachedUser!;
+    }
+
+    _cachedUser = UserEntity(
+      id: 'usr-${DateTime.now().millisecondsSinceEpoch}',
+      email: email,
+      fullName: fullName ?? 'Family Member',
+      createdAt: DateTime.now(),
+    );
+    await _secureStorage.write(key: 'apna_session_user_email', value: email);
+    _authStreamController.add(_cachedUser);
+    return _cachedUser!;
+  }
+
+  @override
+  Future<void> sendOtp(String email) async {
+    if (SupabaseConfig.isConfigured) {
+      await Supabase.instance.client.auth.signInWithOtp(email: email);
+    }
+  }
+
+  @override
+  Future<UserEntity> verifyOtp({required String email, required String token}) async {
+    if (SupabaseConfig.isConfigured) {
+      final response = await Supabase.instance.client.auth.verifyOTP(
+        email: email,
+        token: token,
+        type: OtpType.magiclink,
+      );
+      final user = response.user!;
+      _cachedUser = UserEntity(
+        id: user.id,
+        email: user.email ?? email,
+        fullName: user.userMetadata?['full_name'] as String?,
+        createdAt: DateTime.parse(user.createdAt),
+      );
+      await _secureStorage.write(key: 'apna_session_user_email', value: email);
+      _authStreamController.add(_cachedUser);
+      return _cachedUser!;
+    }
+
+    _cachedUser = UserEntity(
+      id: 'usr-otp-${DateTime.now().millisecondsSinceEpoch}',
+      email: email,
+      fullName: 'Verified Family User',
+      createdAt: DateTime.now(),
+    );
+    await _secureStorage.write(key: 'apna_session_user_email', value: email);
+    _authStreamController.add(_cachedUser);
+    return _cachedUser!;
+  }
+
+  @override
+  Future<void> signOut() async {
+    if (SupabaseConfig.isConfigured) {
+      await Supabase.instance.client.auth.signOut();
+    }
+    await _secureStorage.delete(key: 'apna_session_user_email');
+    _cachedUser = null;
+    _authStreamController.add(null);
+  }
+
+  @override
+  Future<bool> authenticateBiometrics() async {
+    final canCheck = await _localAuth.canCheckBiometrics;
+    final isSupported = await _localAuth.isDeviceSupported();
+    if (!canCheck || !isSupported) return true; // Graceful fallback if no hardware biometric
+
+    return await _localAuth.authenticate(
+      localizedReason: 'Authenticate to access your Apna encrypted family vault',
+      options: const AuthenticationOptions(
+        biometricOnly: false,
+        stickyAuth: true,
+      ),
+    );
+  }
+}

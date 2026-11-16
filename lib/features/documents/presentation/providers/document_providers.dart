@@ -68,3 +68,4 @@ final documentListNotifierProvider =
   final workspaceId = ref.watch(activeWorkspaceIdProvider);
   return DocumentListNotifier(repository, workspaceId);
 });
+

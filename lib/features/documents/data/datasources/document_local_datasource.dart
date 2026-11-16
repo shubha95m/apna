@@ -56,3 +56,4 @@ class DocumentLocalDataSourceImpl implements DocumentLocalDataSource {
     );
   }
 }
+

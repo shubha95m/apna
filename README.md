@@ -51,3 +51,4 @@ Detailed architectural and compliance documentation can be found in the `docs/` 
 - [Feature Guidelines](file:///Users/shubham.sharma/personal-usage/apna/docs/FEATURE_GUIDELINES.md)
 - [Coding Standards](file:///Users/shubham.sharma/personal-usage/apna/docs/CODING_STANDARDS.md)
 - [Architecture Decision Records (ADRs)](file:///Users/shubham.sharma/personal-usage/apna/docs/decisions/)
+
