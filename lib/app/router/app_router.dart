@@ -6,6 +6,7 @@ import '../../features/authentication/presentation/pages/register_page.dart';
 import '../../features/authentication/presentation/providers/auth_providers.dart';
 import '../../features/bills/presentation/pages/bills_page.dart';
 import '../../features/dashboard/presentation/dashboard_page.dart';
+import '../../features/documents/domain/entities/document_entity.dart';
 import '../../features/documents/presentation/pages/add_document_page.dart';
 import '../../features/documents/presentation/pages/documents_page.dart';
 import '../../features/documents/presentation/providers/document_providers.dart';
@@ -86,7 +87,18 @@ final appRouterProvider = Provider<GoRouter>((ref) {
           ),
           GoRoute(
             path: '/documents',
-            builder: (context, state) => const DocumentsPage(),
+            builder: (context, state) {
+              final catParam = state.uri.queryParameters['category'];
+              DocumentCategory? initialCat;
+              if (catParam != null) {
+                try {
+                  initialCat = DocumentCategory.values.firstWhere(
+                    (c) => c.name.toLowerCase() == catParam.toLowerCase(),
+                  );
+                } catch (_) {}
+              }
+              return DocumentsPage(initialCategory: initialCat);
+            },
             routes: [
               GoRoute(
                 path: 'add',
