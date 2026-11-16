@@ -61,16 +61,18 @@ class SupabaseAuthDataSourceImpl implements SupabaseAuthDataSource {
     }
 
     // Offline / Local Vault Mode
-    final savedEmail = await _secureStorage.read(key: 'apna_session_user_email');
-    if (savedEmail != null) {
-      _cachedUser = UserEntity(
-        id: 'usr-shubham-001',
-        email: savedEmail,
-        fullName: 'Shubham Sharma',
-        createdAt: DateTime.now(),
-      );
-      _authStreamController.add(_cachedUser);
-    }
+    try {
+      final savedEmail = await _secureStorage.read(key: 'apna_session_user_email');
+      if (savedEmail != null) {
+        _cachedUser = UserEntity(
+          id: 'usr-shubham-001',
+          email: savedEmail,
+          fullName: 'Shubham Sharma',
+          createdAt: DateTime.now(),
+        );
+        _authStreamController.add(_cachedUser);
+      }
+    } catch (_) {}
   }
 
   @override
