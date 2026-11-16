@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'app/app.dart';
@@ -8,6 +9,14 @@ import 'features/legal_consent/presentation/consent_dialog.dart';
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
+  // 1. Load gitignored .env file
+  try {
+    await dotenv.load(fileName: '.env');
+  } catch (e) {
+    debugPrint('.env load notice (using fallback/offline vault): $e');
+  }
+
+  // 2. Initialize Supabase if credentials are provided in .env
   if (SupabaseConfig.isConfigured) {
     try {
       await Supabase.initialize(
