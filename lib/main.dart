@@ -4,19 +4,18 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'app/app.dart';
 import 'app/configuration/supabase_config.dart';
-import 'features/legal_consent/presentation/consent_dialog.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
-  // 1. Load gitignored .env file
+  // 1. Load gitignored .env file if available
   try {
     await dotenv.load(fileName: '.env');
   } catch (e) {
-    debugPrint('.env load notice (using fallback/offline vault): $e');
+    debugPrint('.env load notice (using production vault defaults): $e');
   }
 
-  // 2. Initialize Supabase if credentials are provided in .env
+  // 2. Initialize Supabase cloud credentials
   if (SupabaseConfig.isConfigured) {
     try {
       await Supabase.initialize(
@@ -28,46 +27,5 @@ void main() async {
     }
   }
 
-  runApp(const ProviderScope(child: ApnaRoot()));
-}
-
-class ApnaRoot extends StatefulWidget {
-  const ApnaRoot({super.key});
-
-  @override
-  State<ApnaRoot> createState() => _ApnaRootState();
-}
-
-class _ApnaRootState extends State<ApnaRoot> {
-  bool _consentChecked = false;
-
-  @override
-  void initState() {
-    super.initState();
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      _verifyLegalConsent();
-    });
-  }
-
-  void _verifyLegalConsent() {
-    // If first run, present DPDP Act 2023 Consent Gatekeeper Dialog
-    if (!_consentChecked) {
-      showDialog(
-        context: context,
-        barrierDismissible: false,
-        builder: (ctx) => IndiaLegalConsentDialog(
-          onConsentGranted: (consent) {
-            setState(() {
-              _consentChecked = true;
-            });
-          },
-        ),
-      );
-    }
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return const ApnaApp();
-  }
+  runApp(const ProviderScope(child: ApnaApp()));
 }

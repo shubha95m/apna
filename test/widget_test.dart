@@ -43,6 +43,19 @@ void main() {
     expect(find.text('Pending Tasks'), findsOneWidget);
     expect(find.text('Upcoming Bills'), findsOneWidget);
   });
+
+  testWidgets('ApnaApp launches without crashing', (WidgetTester tester) async {
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [
+          authControllerProvider.overrideWith((ref) => MockAuthController(null)),
+        ],
+        child: const ApnaApp(),
+      ),
+    );
+    await tester.pumpAndSettle();
+    expect(find.text('Apna Workspace'), findsOneWidget);
+  });
 }
 
 class MockAuthController extends StateNotifier<AsyncValue<UserEntity?>>
