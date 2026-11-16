@@ -8,6 +8,7 @@ import 'package:file_picker/file_picker.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:apna/app/theme/app_colors.dart';
 import 'package:apna/app/theme/app_typography.dart';
+import 'package:apna/features/authentication/presentation/providers/auth_providers.dart';
 import '../../domain/entities/document_entity.dart';
 import '../providers/document_providers.dart';
 
@@ -98,7 +99,9 @@ class _AddDocumentPageState extends ConsumerState<AddDocumentPage> {
 
     try {
       final workspaceId = ref.read(activeWorkspaceIdProvider);
-      final currentUserId = Supabase.instance.client.auth.currentUser?.id ?? 'a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a11';
+      final currentUserId = Supabase.instance.client.auth.currentUser?.id ??
+          ref.read(authControllerProvider).valueOrNull?.id ??
+          const Uuid().v4();
       final docId = const Uuid().v4();
 
       String? storagePath;

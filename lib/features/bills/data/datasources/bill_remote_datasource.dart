@@ -20,6 +20,7 @@ class BillRemoteDataSourceImpl implements BillRemoteDataSource {
         .from('bills')
         .select()
         .eq('workspace_id', workspaceId)
+        .isFilter('deleted_at', null)
         .order('due_date', ascending: true);
 
     return (response as List)
@@ -59,6 +60,9 @@ class BillRemoteDataSourceImpl implements BillRemoteDataSource {
   Future<void> deleteBill(String billId) async {
     if (!SupabaseConfig.isConfigured) return;
 
-    await _client.from('bills').delete().eq('id', billId);
+    await _client
+        .from('bills')
+        .update({'deleted_at': DateTime.now().toIso8601String()})
+        .eq('id', billId);
   }
 }

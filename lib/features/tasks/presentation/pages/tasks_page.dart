@@ -2,8 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 import 'package:uuid/uuid.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../../../app/theme/app_colors.dart';
 import '../../../../app/theme/app_typography.dart';
+import 'package:apna/features/authentication/presentation/providers/auth_providers.dart';
 import 'package:apna/features/documents/presentation/providers/document_providers.dart';
 import '../../domain/entities/task_entity.dart';
 import '../providers/task_providers.dart';
@@ -117,10 +119,13 @@ class _TasksPageState extends ConsumerState<TasksPage> {
                 if (title.isEmpty) return;
 
                 final workspaceId = ref.read(activeWorkspaceIdProvider);
+                final currentUserId = Supabase.instance.client.auth.currentUser?.id ??
+                    ref.read(authControllerProvider).valueOrNull?.id ??
+                    'user-anonymous';
                 final newTask = TaskEntity(
                   id: const Uuid().v4(),
                   workspaceId: workspaceId,
-                  creatorId: 'usr-shubham-001',
+                  creatorId: currentUserId,
                   title: title,
                   description: descController.text.trim().isNotEmpty ? descController.text.trim() : null,
                   priority: priority,

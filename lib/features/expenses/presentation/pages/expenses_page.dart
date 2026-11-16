@@ -2,8 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 import 'package:uuid/uuid.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../../../app/theme/app_colors.dart';
 import '../../../../app/theme/app_typography.dart';
+import 'package:apna/features/authentication/presentation/providers/auth_providers.dart';
 import 'package:apna/features/documents/presentation/providers/document_providers.dart';
 import '../../domain/entities/expense_entity.dart';
 import '../providers/expense_providers.dart';
@@ -154,10 +156,13 @@ class _ExpensesPageState extends ConsumerState<ExpensesPage> {
                 if (title.isEmpty || amount <= 0) return;
 
                 final workspaceId = ref.read(activeWorkspaceIdProvider);
+                final currentUserId = Supabase.instance.client.auth.currentUser?.id ??
+                    ref.read(authControllerProvider).valueOrNull?.id ??
+                    'user-anonymous';
                 final newExpense = ExpenseEntity(
                   id: const Uuid().v4(),
                   workspaceId: workspaceId,
-                  paidById: 'usr-shubham-001',
+                  paidById: currentUserId,
                   title: title,
                   amount: amount,
                   category: category,

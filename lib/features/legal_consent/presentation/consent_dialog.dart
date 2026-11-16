@@ -5,10 +5,12 @@ import '../domain/legal_consent_model.dart';
 
 class IndiaLegalConsentDialog extends StatefulWidget {
   final Function(LegalConsentModel consent) onConsentGranted;
+  final String? userId;
 
   const IndiaLegalConsentDialog({
     super.key,
     required this.onConsentGranted,
+    this.userId,
   });
 
   @override
@@ -144,7 +146,7 @@ class _IndiaLegalConsentDialogState extends State<IndiaLegalConsentDialog> {
                         ? () {
                             final consent = LegalConsentModel(
                               id: DateTime.now().millisecondsSinceEpoch.toString(),
-                              userId: 'user-default-shubham',
+                              userId: widget.userId ?? 'user-default',
                               termsVersion: 'v1.0.0-2026',
                               privacyVersion: 'v1.0.0-2026',
                               consentPurposes: {

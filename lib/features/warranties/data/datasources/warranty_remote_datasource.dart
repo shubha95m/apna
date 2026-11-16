@@ -19,6 +19,7 @@ class WarrantyRemoteDataSourceImpl implements WarrantyRemoteDataSource {
         .from('warranties')
         .select()
         .eq('workspace_id', workspaceId)
+        .isFilter('deleted_at', null)
         .order('expiry_date', ascending: true);
 
     return (response as List)
@@ -39,6 +40,9 @@ class WarrantyRemoteDataSourceImpl implements WarrantyRemoteDataSource {
   Future<void> deleteWarranty(String warrantyId) async {
     if (!SupabaseConfig.isConfigured) return;
 
-    await _client.from('warranties').delete().eq('id', warrantyId);
+    await _client
+        .from('warranties')
+        .update({'deleted_at': DateTime.now().toIso8601String()})
+        .eq('id', warrantyId);
   }
 }

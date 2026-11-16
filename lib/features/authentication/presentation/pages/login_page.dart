@@ -60,10 +60,15 @@ class _LoginPageState extends ConsumerState<LoginPage> {
   Future<void> _enterOfflineVault({String? email}) async {
     setState(() => _errorMessage = null);
     final targetEmail = (email != null && email.isNotEmpty) ? email : _emailController.text.trim();
-    final effectiveEmail = targetEmail.isNotEmpty ? targetEmail : 'shubham@family.apna';
+    if (targetEmail.isEmpty) {
+      setState(() => _errorMessage = 'Please enter your email address to continue.');
+      return;
+    }
+    final emailPart = targetEmail.split('@').first;
+    final effectiveName = emailPart.isNotEmpty ? '${emailPart[0].toUpperCase()}${emailPart.substring(1)}' : 'User';
     final success = await ref.read(authControllerProvider.notifier).loginOffline(
-          email: effectiveEmail,
-          fullName: effectiveEmail.contains('shubham') ? 'Shubham Sharma' : effectiveEmail.split('@').first,
+          email: targetEmail,
+          fullName: effectiveName,
         );
     if (!mounted) return;
     if (success) {

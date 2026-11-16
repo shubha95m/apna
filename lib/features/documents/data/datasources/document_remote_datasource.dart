@@ -1,4 +1,5 @@
 import 'dart:typed_data';
+import 'package:uuid/uuid.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../../../app/configuration/supabase_config.dart';
 import '../../domain/entities/document_entity.dart';
@@ -115,7 +116,7 @@ class DocumentRemoteDataSourceImpl implements DocumentRemoteDataSource {
     if (!SupabaseConfig.isConfigured) return document;
 
     final ownerId = _client.auth.currentUser?.id ??
-        (document.ownerId.length == 36 ? document.ownerId : 'a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a11');
+        (document.ownerId.length == 36 ? document.ownerId : const Uuid().v4());
     final payload = {
       'id': document.id,
       'workspace_id': document.workspaceId,

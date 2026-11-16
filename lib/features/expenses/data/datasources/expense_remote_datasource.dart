@@ -19,6 +19,7 @@ class ExpenseRemoteDataSourceImpl implements ExpenseRemoteDataSource {
         .from('expenses')
         .select()
         .eq('workspace_id', workspaceId)
+        .isFilter('deleted_at', null)
         .order('expense_date', ascending: false);
 
     return (response as List)
@@ -52,6 +53,9 @@ class ExpenseRemoteDataSourceImpl implements ExpenseRemoteDataSource {
   Future<void> deleteExpense(String expenseId) async {
     if (!SupabaseConfig.isConfigured) return;
 
-    await _client.from('expenses').delete().eq('id', expenseId);
+    await _client
+        .from('expenses')
+        .update({'deleted_at': DateTime.now().toIso8601String()})
+        .eq('id', expenseId);
   }
 }

@@ -33,7 +33,7 @@ class ExpenseModel extends ExpenseEntity {
     return ExpenseModel(
       id: map['id'] as String,
       workspaceId: map['workspace_id'] as String,
-      paidById: map['paid_by_id'] as String? ?? 'usr-shubham-001',
+      paidById: map['paid_by_id'] as String? ?? 'user-anonymous',
       title: map['title'] as String,
       amount: (map['amount'] as num).toDouble(),
       category: map['category'] as String? ?? 'other',

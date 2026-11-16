@@ -63,11 +63,15 @@ class SupabaseAuthDataSourceImpl implements SupabaseAuthDataSource {
     // Offline / Local Vault Mode
     try {
       final savedEmail = await _secureStorage.read(key: 'apna_session_user_email');
+      final savedName = await _secureStorage.read(key: 'apna_session_user_name');
       if (savedEmail != null) {
+        final emailPart = savedEmail.split('@').first;
+        final cleanId = emailPart.replaceAll(RegExp(r'[^a-zA-Z0-9]'), '');
+        final defaultName = emailPart.isNotEmpty ? '${emailPart[0].toUpperCase()}${emailPart.substring(1)}' : 'User';
         _cachedUser = UserEntity(
-          id: 'usr-shubham-001',
+          id: 'usr-$cleanId-001',
           email: savedEmail,
-          fullName: 'Shubham Sharma',
+          fullName: savedName ?? defaultName,
           createdAt: DateTime.now(),
         );
         _authStreamController.add(_cachedUser);
@@ -89,13 +93,17 @@ class SupabaseAuthDataSourceImpl implements SupabaseAuthDataSource {
         password: password,
       );
       final user = response.user!;
+      final resolvedName = user.userMetadata?['full_name'] as String?;
       _cachedUser = UserEntity(
         id: user.id,
         email: user.email ?? email,
-        fullName: user.userMetadata?['full_name'] as String?,
+        fullName: resolvedName,
         createdAt: DateTime.parse(user.createdAt),
       );
       await _secureStorage.write(key: 'apna_session_user_email', value: email);
+      if (resolvedName != null) {
+        await _secureStorage.write(key: 'apna_session_user_name', value: resolvedName);
+      }
       _authStreamController.add(_cachedUser);
       return _cachedUser!;
     }
@@ -105,13 +113,17 @@ class SupabaseAuthDataSourceImpl implements SupabaseAuthDataSource {
       throw const AuthException('Password must be at least 6 characters.');
     }
 
+    final emailPart = email.split('@').first;
+    final cleanId = emailPart.replaceAll(RegExp(r'[^a-zA-Z0-9]'), '');
+    final defaultName = emailPart.isNotEmpty ? '${emailPart[0].toUpperCase()}${emailPart.substring(1)}' : 'User';
     _cachedUser = UserEntity(
-      id: 'usr-shubham-001',
+      id: 'usr-$cleanId-001',
       email: email,
-      fullName: 'Shubham Sharma',
+      fullName: defaultName,
       createdAt: DateTime.now(),
     );
     await _secureStorage.write(key: 'apna_session_user_email', value: email);
+    await _secureStorage.write(key: 'apna_session_user_name', value: defaultName);
     _authStreamController.add(_cachedUser);
     return _cachedUser!;
   }
@@ -132,33 +144,45 @@ class SupabaseAuthDataSourceImpl implements SupabaseAuthDataSource {
         createdAt: DateTime.parse(user.createdAt),
       );
       await _secureStorage.write(key: 'apna_session_user_email', value: email);
+      if (fullName != null && fullName.isNotEmpty) {
+        await _secureStorage.write(key: 'apna_session_user_name', value: fullName);
+      }
       _authStreamController.add(_cachedUser);
       return _cachedUser!;
     }
 
+    final emailPart = email.split('@').first;
+    final cleanId = emailPart.replaceAll(RegExp(r'[^a-zA-Z0-9]'), '');
+    final effectiveName = (fullName != null && fullName.isNotEmpty)
+        ? fullName
+        : (emailPart.isNotEmpty ? '${emailPart[0].toUpperCase()}${emailPart.substring(1)}' : 'User');
     _cachedUser = UserEntity(
-      id: 'usr-${DateTime.now().millisecondsSinceEpoch}',
+      id: 'usr-$cleanId-${DateTime.now().millisecondsSinceEpoch}',
       email: email,
-      fullName: fullName ?? 'Family Member',
+      fullName: effectiveName,
       createdAt: DateTime.now(),
     );
     await _secureStorage.write(key: 'apna_session_user_email', value: email);
+    await _secureStorage.write(key: 'apna_session_user_name', value: effectiveName);
     _authStreamController.add(_cachedUser);
     return _cachedUser!;
   }
 
   @override
   Future<UserEntity> signInOffline({required String email, String? fullName}) async {
-    final effectiveName = (fullName != null && fullName.isNotEmpty)
-        ? fullName
-        : (email.contains('shubham') ? 'Shubham Sharma' : email.split('@').first);
+    final emailPart = email.split('@').first;
+    final cleanId = emailPart.replaceAll(RegExp(r'[^a-zA-Z0-9]'), '');
+    final effectiveName = (fullName != null && fullName.trim().isNotEmpty)
+        ? fullName.trim()
+        : (emailPart.isNotEmpty ? '${emailPart[0].toUpperCase()}${emailPart.substring(1)}' : 'User');
     _cachedUser = UserEntity(
-      id: 'usr-${email.split('@').first.replaceAll(RegExp(r'[^a-zA-Z0-9]'), '')}-001',
+      id: 'usr-$cleanId-001',
       email: email,
       fullName: effectiveName,
       createdAt: DateTime.now(),
     );
     await _secureStorage.write(key: 'apna_session_user_email', value: email);
+    await _secureStorage.write(key: 'apna_session_user_name', value: effectiveName);
     _authStreamController.add(_cachedUser);
     return _cachedUser!;
   }
@@ -207,6 +231,7 @@ class SupabaseAuthDataSourceImpl implements SupabaseAuthDataSource {
       await Supabase.instance.client.auth.signOut();
     }
     await _secureStorage.delete(key: 'apna_session_user_email');
+    await _secureStorage.delete(key: 'apna_session_user_name');
     _cachedUser = null;
     _authStreamController.add(null);
   }

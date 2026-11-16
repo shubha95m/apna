@@ -35,7 +35,7 @@ class TaskModel extends TaskEntity {
     return TaskModel(
       id: map['id'] as String,
       workspaceId: map['workspace_id'] as String,
-      creatorId: map['creator_id'] as String? ?? 'usr-shubham-001',
+      creatorId: map['creator_id'] as String? ?? 'user-anonymous',
       assignedToId: map['assigned_to_id'] as String?,
       title: map['title'] as String,
       description: map['description'] as String?,
