@@ -16,6 +16,9 @@ echo "--> Uploading APK to Supabase Cloud Storage (releases/apna.apk)..."
 cp build/app/outputs/flutter-apk/app-arm64-v8a-release.apk exports/apna-mobile.apk
 python3 scripts/upload_apk_to_supabase.py
 
+# 4. Prune stale / legacy APKs to prevent storage bloat
+./scripts/cleanup_apks.sh
+
 # 4. Upload Web App to Supabase 'web' bucket
 echo "--> Uploading Web Assets to Supabase Cloud Storage (web/)..."
 python3 scripts/upload_web_to_supabase.py
