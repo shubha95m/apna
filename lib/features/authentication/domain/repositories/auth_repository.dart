@@ -22,3 +22,4 @@ abstract interface class AuthRepository {
   Future<Result<void, AppFailure>> signOut();
   Future<Result<bool, AppFailure>> authenticateWithBiometrics();
 }
+

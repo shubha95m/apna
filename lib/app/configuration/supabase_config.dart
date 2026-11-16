@@ -3,14 +3,14 @@ class SupabaseConfig {
   /// Replace with your project URL from https://supabase.com/dashboard/project/<your-project-ref>
   static const String supabaseUrl = String.fromEnvironment(
     'SUPABASE_URL',
-    defaultValue: 'https://xyzcompanyproject.supabase.co',
+    defaultValue: 'https://jkmdshurqjjcwshnfihi.supabase.co',
   );
 
   /// Default free tier Supabase Anon / Public Key.
   /// This key is safe to embed in client apps and is restricted by PostgreSQL Row Level Security (RLS).
   static const String supabaseAnonKey = String.fromEnvironment(
     'SUPABASE_ANON_KEY',
-    defaultValue: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.dummy_anon_key_for_offline_resilience',
+    defaultValue: 'sb_publishable_YPGrNtYbfx5UER0nzeLz5g_n8plHmxe',
   );
 
   /// Check if live Supabase cloud credentials are configured
@@ -18,3 +18,4 @@ class SupabaseConfig {
       supabaseUrl != 'https://xyzcompanyproject.supabase.co' &&
       !supabaseAnonKey.contains('dummy_anon_key');
 }
+

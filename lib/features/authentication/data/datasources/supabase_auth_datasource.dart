@@ -29,6 +29,17 @@ class SupabaseAuthDataSourceImpl implements SupabaseAuthDataSource {
   Future<void> _initialize() async {
     if (SupabaseConfig.isConfigured) {
       try {
+        final initialUser = Supabase.instance.client.auth.currentUser;
+        if (initialUser != null) {
+          _cachedUser = UserEntity(
+            id: initialUser.id,
+            email: initialUser.email ?? '',
+            fullName: initialUser.userMetadata?['full_name'] as String?,
+            createdAt: DateTime.parse(initialUser.createdAt),
+          );
+          _authStreamController.add(_cachedUser);
+        }
+
         Supabase.instance.client.auth.onAuthStateChange.listen((data) {
           final user = data.session?.user;
           if (user != null) {
@@ -196,3 +207,4 @@ class SupabaseAuthDataSourceImpl implements SupabaseAuthDataSource {
     );
   }
 }
+

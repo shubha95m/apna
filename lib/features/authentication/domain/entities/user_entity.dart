@@ -17,3 +17,4 @@ class UserEntity {
 
   String get displayName => fullName ?? email.split('@').first;
 }
+
