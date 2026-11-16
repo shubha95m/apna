@@ -1,6 +1,6 @@
 import 'dart:async';
-import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:local_auth/local_auth.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../../../app/configuration/supabase_config.dart';
 import '../../domain/entities/user_entity.dart';
@@ -19,12 +19,6 @@ abstract interface class SupabaseAuthDataSource {
 
 class SupabaseAuthDataSourceImpl implements SupabaseAuthDataSource {
   final _localAuth = LocalAuthentication();
-  final _secureStorage = const FlutterSecureStorage(
-    aOptions: AndroidOptions(
-      encryptedSharedPreferences: true,
-      resetOnError: true,
-    ),
-  );
   final _authStreamController = StreamController<UserEntity?>.broadcast();
   UserEntity? _cachedUser;
 
@@ -67,13 +61,10 @@ class SupabaseAuthDataSourceImpl implements SupabaseAuthDataSource {
 
     // Offline / Local Vault Mode
     try {
-      final savedEmail = await _secureStorage
-          .read(key: 'apna_session_user_email')
-          .timeout(const Duration(seconds: 2), onTimeout: () => null);
-      final savedName = await _secureStorage
-          .read(key: 'apna_session_user_name')
-          .timeout(const Duration(seconds: 2), onTimeout: () => null);
-      if (savedEmail != null) {
+      final prefs = await SharedPreferences.getInstance();
+      final savedEmail = prefs.getString('apna_session_user_email');
+      final savedName = prefs.getString('apna_session_user_name');
+      if (savedEmail != null && savedEmail.isNotEmpty) {
         final emailPart = savedEmail.split('@').first;
         final cleanId = emailPart.replaceAll(RegExp(r'[^a-zA-Z0-9]'), '');
         final defaultName = emailPart.isNotEmpty ? '${emailPart[0].toUpperCase()}${emailPart.substring(1)}' : 'User';
@@ -109,9 +100,10 @@ class SupabaseAuthDataSourceImpl implements SupabaseAuthDataSource {
         fullName: resolvedName,
         createdAt: DateTime.parse(user.createdAt),
       );
-      await _secureStorage.write(key: 'apna_session_user_email', value: email);
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setString('apna_session_user_email', email);
       if (resolvedName != null) {
-        await _secureStorage.write(key: 'apna_session_user_name', value: resolvedName);
+        await prefs.setString('apna_session_user_name', resolvedName);
       }
       _authStreamController.add(_cachedUser);
       return _cachedUser!;
@@ -131,8 +123,9 @@ class SupabaseAuthDataSourceImpl implements SupabaseAuthDataSource {
       fullName: defaultName,
       createdAt: DateTime.now(),
     );
-    await _secureStorage.write(key: 'apna_session_user_email', value: email);
-    await _secureStorage.write(key: 'apna_session_user_name', value: defaultName);
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString('apna_session_user_email', email);
+    await prefs.setString('apna_session_user_name', defaultName);
     _authStreamController.add(_cachedUser);
     return _cachedUser!;
   }
@@ -152,9 +145,10 @@ class SupabaseAuthDataSourceImpl implements SupabaseAuthDataSource {
         fullName: fullName,
         createdAt: DateTime.parse(user.createdAt),
       );
-      await _secureStorage.write(key: 'apna_session_user_email', value: email);
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setString('apna_session_user_email', email);
       if (fullName != null && fullName.isNotEmpty) {
-        await _secureStorage.write(key: 'apna_session_user_name', value: fullName);
+        await prefs.setString('apna_session_user_name', fullName);
       }
       _authStreamController.add(_cachedUser);
       return _cachedUser!;
@@ -171,8 +165,9 @@ class SupabaseAuthDataSourceImpl implements SupabaseAuthDataSource {
       fullName: effectiveName,
       createdAt: DateTime.now(),
     );
-    await _secureStorage.write(key: 'apna_session_user_email', value: email);
-    await _secureStorage.write(key: 'apna_session_user_name', value: effectiveName);
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString('apna_session_user_email', email);
+    await prefs.setString('apna_session_user_name', effectiveName);
     _authStreamController.add(_cachedUser);
     return _cachedUser!;
   }
@@ -190,8 +185,9 @@ class SupabaseAuthDataSourceImpl implements SupabaseAuthDataSource {
       fullName: effectiveName,
       createdAt: DateTime.now(),
     );
-    await _secureStorage.write(key: 'apna_session_user_email', value: email);
-    await _secureStorage.write(key: 'apna_session_user_name', value: effectiveName);
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString('apna_session_user_email', email);
+    await prefs.setString('apna_session_user_name', effectiveName);
     _authStreamController.add(_cachedUser);
     return _cachedUser!;
   }
@@ -218,7 +214,8 @@ class SupabaseAuthDataSourceImpl implements SupabaseAuthDataSource {
         fullName: user.userMetadata?['full_name'] as String?,
         createdAt: DateTime.parse(user.createdAt),
       );
-      await _secureStorage.write(key: 'apna_session_user_email', value: email);
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setString('apna_session_user_email', email);
       _authStreamController.add(_cachedUser);
       return _cachedUser!;
     }
@@ -229,7 +226,8 @@ class SupabaseAuthDataSourceImpl implements SupabaseAuthDataSource {
       fullName: 'Verified Family User',
       createdAt: DateTime.now(),
     );
-    await _secureStorage.write(key: 'apna_session_user_email', value: email);
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString('apna_session_user_email', email);
     _authStreamController.add(_cachedUser);
     return _cachedUser!;
   }
@@ -239,8 +237,9 @@ class SupabaseAuthDataSourceImpl implements SupabaseAuthDataSource {
     if (SupabaseConfig.isConfigured) {
       await Supabase.instance.client.auth.signOut();
     }
-    await _secureStorage.delete(key: 'apna_session_user_email');
-    await _secureStorage.delete(key: 'apna_session_user_name');
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.remove('apna_session_user_email');
+    await prefs.remove('apna_session_user_name');
     _cachedUser = null;
     _authStreamController.add(null);
   }

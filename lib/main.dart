@@ -10,21 +10,21 @@ void main() async {
 
   // 1. Load gitignored .env file if available
   try {
-    await dotenv.load(fileName: '.env').timeout(const Duration(seconds: 2));
+    await dotenv.load(fileName: '.env');
   } catch (e) {
     debugPrint('.env load notice (using production vault defaults): $e');
   }
 
   // 2. Initialize Supabase cloud credentials
-  if (SupabaseConfig.isConfigured) {
-    try {
+  try {
+    if (SupabaseConfig.isConfigured) {
       await Supabase.initialize(
         url: SupabaseConfig.supabaseUrl,
         anonKey: SupabaseConfig.supabaseAnonKey,
-      ).timeout(const Duration(seconds: 3));
-    } catch (e) {
-      debugPrint('Supabase initialization notice: $e');
+      );
     }
+  } catch (e) {
+    debugPrint('Supabase initialization notice: $e');
   }
 
   runApp(const ProviderScope(child: ApnaApp()));

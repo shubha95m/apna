@@ -11,8 +11,10 @@ class SupabaseConfig {
   static String get supabaseUrl {
     const fromCompile = String.fromEnvironment('SUPABASE_URL');
     if (fromCompile.isNotEmpty) return fromCompile;
-    final fromDotenv = dotenv.env['SUPABASE_URL'];
-    if (fromDotenv != null && fromDotenv.isNotEmpty) return fromDotenv;
+    if (dotenv.isInitialized) {
+      final fromDotenv = dotenv.env['SUPABASE_URL'];
+      if (fromDotenv != null && fromDotenv.isNotEmpty) return fromDotenv;
+    }
     return _defaultUrl;
   }
 
@@ -20,8 +22,10 @@ class SupabaseConfig {
   static String get supabaseAnonKey {
     const fromCompile = String.fromEnvironment('SUPABASE_ANON_KEY');
     if (fromCompile.isNotEmpty) return fromCompile;
-    final fromDotenv = dotenv.env['SUPABASE_ANON_KEY'];
-    if (fromDotenv != null && fromDotenv.isNotEmpty) return fromDotenv;
+    if (dotenv.isInitialized) {
+      final fromDotenv = dotenv.env['SUPABASE_ANON_KEY'];
+      if (fromDotenv != null && fromDotenv.isNotEmpty) return fromDotenv;
+    }
     return _defaultAnonKey;
   }
 
