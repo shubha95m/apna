@@ -63,6 +63,7 @@ class SyncEngine {
     required Map<String, dynamic> payload,
   }) async {
     final db = await LocalDatabase.instance;
+    if (db == null) return;
     final item = SyncOutboxItem(
       id: _uuid.v4(),
       entityType: entityType,
@@ -83,6 +84,7 @@ class SyncEngine {
   /// Process pending outbox mutations
   Future<int> processPendingQueue() async {
     final db = await LocalDatabase.instance;
+    if (db == null) return 0;
     final pendingRecords = await db.query(
       'local_sync_outbox',
       where: 'status = ?',

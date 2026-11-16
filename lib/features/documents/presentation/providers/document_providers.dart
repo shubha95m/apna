@@ -1,6 +1,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../core/sync/sync_engine.dart';
 import '../../data/datasources/document_local_datasource.dart';
+import '../../data/datasources/document_remote_datasource.dart';
 import '../../data/repositories/document_repository_impl.dart';
 import '../../domain/entities/document_entity.dart';
 import '../../domain/repositories/document_repository.dart';
@@ -9,15 +10,22 @@ final documentLocalDataSourceProvider = Provider<DocumentLocalDataSource>((ref) 
   return DocumentLocalDataSourceImpl();
 });
 
+final documentRemoteDataSourceProvider = Provider<DocumentRemoteDataSource>((ref) {
+  return DocumentRemoteDataSourceImpl();
+});
+
 final documentRepositoryProvider = Provider<DocumentRepository>((ref) {
   final localDataSource = ref.watch(documentLocalDataSourceProvider);
+  final remoteDataSource = ref.watch(documentRemoteDataSourceProvider);
   return DocumentRepositoryImpl(
     localDataSource: localDataSource,
+    remoteDataSource: remoteDataSource,
     syncEngine: SyncEngine(),
   );
 });
 
-final activeWorkspaceIdProvider = StateProvider<String>((ref) => 'workspace-family-001');
+// Seeded Family workspace UUID in Supabase
+final activeWorkspaceIdProvider = StateProvider<String>((ref) => 'c0eebc99-9c0b-4ef8-bb6d-6bb9bd380a02');
 
 final activeWorkspaceNameProvider = StateProvider<String>((ref) => 'Family');
 
@@ -44,7 +52,7 @@ class DocumentListNotifier extends StateNotifier<AsyncValue<List<DocumentEntity>
     result.fold(
       (savedDoc) {
         final currentList = state.value ?? [];
-        state = AsyncValue.data([savedDoc, ...currentList]);
+        state = AsyncValue.data([savedDoc, ...currentList.where((d) => d.id != savedDoc.id)]);
       },
       (failure) => state = AsyncValue.error(failure.message, StackTrace.current),
     );
@@ -68,4 +76,3 @@ final documentListNotifierProvider =
   final workspaceId = ref.watch(activeWorkspaceIdProvider);
   return DocumentListNotifier(repository, workspaceId);
 });
-

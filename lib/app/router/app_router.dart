@@ -4,10 +4,14 @@ import 'package:go_router/go_router.dart';
 import '../../features/authentication/presentation/pages/login_page.dart';
 import '../../features/authentication/presentation/pages/register_page.dart';
 import '../../features/authentication/presentation/providers/auth_providers.dart';
+import '../../features/bills/presentation/pages/bills_page.dart';
 import '../../features/dashboard/presentation/dashboard_page.dart';
 import '../../features/documents/presentation/pages/add_document_page.dart';
 import '../../features/documents/presentation/pages/documents_page.dart';
 import '../../features/documents/presentation/providers/document_providers.dart';
+import '../../features/expenses/presentation/pages/expenses_page.dart';
+import '../../features/tasks/presentation/pages/tasks_page.dart';
+import '../../features/warranties/presentation/pages/warranties_page.dart';
 import '../../shared/widgets/responsive_scaffold.dart';
 
 final appRouterProvider = Provider<GoRouter>((ref) {
@@ -60,10 +64,10 @@ final appRouterProvider = Provider<GoRouter>((ref) {
               final current = ref.read(activeWorkspaceNameProvider);
               if (current == 'Family') {
                 ref.read(activeWorkspaceNameProvider.notifier).state = 'Personal';
-                ref.read(activeWorkspaceIdProvider.notifier).state = 'workspace-personal-001';
+                ref.read(activeWorkspaceIdProvider.notifier).state = 'c0eebc99-9c0b-4ef8-bb6d-6bb9bd380a01';
               } else {
                 ref.read(activeWorkspaceNameProvider.notifier).state = 'Family';
-                ref.read(activeWorkspaceIdProvider.notifier).state = 'workspace-family-001';
+                ref.read(activeWorkspaceIdProvider.notifier).state = 'c0eebc99-9c0b-4ef8-bb6d-6bb9bd380a02';
               }
             },
             onDestinationSelected: (index) {
@@ -92,7 +96,7 @@ final appRouterProvider = Provider<GoRouter>((ref) {
           ),
           GoRoute(
             path: '/tasks',
-            builder: (context, state) => _buildPlaceholder(context, 'Tasks & Family Chores'),
+            builder: (context, state) => const TasksPage(),
           ),
           GoRoute(
             path: '/notes',
@@ -100,15 +104,15 @@ final appRouterProvider = Provider<GoRouter>((ref) {
           ),
           GoRoute(
             path: '/bills',
-            builder: (context, state) => _buildPlaceholder(context, 'Bills & Recurring Payments'),
+            builder: (context, state) => const BillsPage(),
           ),
           GoRoute(
             path: '/warranty',
-            builder: (context, state) => _buildPlaceholder(context, 'Warranties & Product Invoices'),
+            builder: (context, state) => const WarrantiesPage(),
           ),
           GoRoute(
             path: '/expenses',
-            builder: (context, state) => _buildPlaceholder(context, 'Expenses & Shared Split'),
+            builder: (context, state) => const ExpensesPage(),
           ),
           GoRoute(
             path: '/calendar',

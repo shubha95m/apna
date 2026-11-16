@@ -1,12 +1,18 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:intl/intl.dart';
 import 'package:apna/app/theme/app_colors.dart';
 import 'package:apna/app/theme/app_typography.dart';
 import 'package:apna/core/integrations/upi_launcher.dart';
 import 'package:apna/shared/widgets/quick_action_item.dart';
 import 'package:apna/shared/widgets/stat_badge.dart';
+import '../../bills/domain/entities/bill_entity.dart';
+import '../../bills/presentation/providers/bill_providers.dart';
+import '../../documents/domain/entities/document_entity.dart';
 import '../../documents/presentation/providers/document_providers.dart';
+import '../../tasks/presentation/providers/task_providers.dart';
+import '../../warranties/presentation/providers/warranty_providers.dart';
 
 class DashboardPage extends ConsumerWidget {
   const DashboardPage({super.key});
@@ -14,6 +20,21 @@ class DashboardPage extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final workspaceName = ref.watch(activeWorkspaceNameProvider);
+
+    final documentsAsync = ref.watch(documentListNotifierProvider);
+    final tasksAsync = ref.watch(taskListNotifierProvider);
+    final billsAsync = ref.watch(billListNotifierProvider);
+    final warrantiesAsync = ref.watch(warrantyListNotifierProvider);
+
+    final documents = documentsAsync.valueOrNull ?? [];
+    final tasks = tasksAsync.valueOrNull ?? [];
+    final bills = billsAsync.valueOrNull ?? [];
+    final warranties = warrantiesAsync.valueOrNull ?? [];
+
+    final pendingTasksCount = tasks.where((t) => !t.isCompleted).length;
+    final unpaidBills = bills.where((b) => !b.isPaid).toList();
+    final totalUnpaidAmount = unpaidBills.fold(0.0, (sum, b) => sum + b.amount);
+    final activeWarrantiesCount = warranties.where((w) => !w.isExpired).length;
 
     return Scaffold(
       backgroundColor: ApnaColors.background,
@@ -25,7 +46,7 @@ class DashboardPage extends ConsumerWidget {
             // Top Bar Greeting
             LayoutBuilder(
               builder: (context, constraints) {
-                final isWide = constraints.maxWidth > 500;
+                final isWide = constraints.maxWidth > 650;
                 if (isWide) {
                   return Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -48,7 +69,7 @@ class DashboardPage extends ConsumerWidget {
             ),
             const SizedBox(height: 20),
 
-            // Top Stat Cards
+            // Top Stat Cards (Real Live Data)
             LayoutBuilder(
               builder: (context, constraints) {
                 final isWide = constraints.maxWidth > 700;
@@ -61,7 +82,7 @@ class DashboardPage extends ConsumerWidget {
                   childAspectRatio: isWide ? 1.6 : 1.25,
                   children: [
                     StatBadgeCard(
-                      count: '5',
+                      count: '$pendingTasksCount',
                       label: 'Pending Tasks',
                       icon: Icons.check_circle_outline_rounded,
                       iconColor: ApnaColors.categoryTask,
@@ -69,30 +90,30 @@ class DashboardPage extends ConsumerWidget {
                       onTap: () => context.go('/tasks'),
                     ),
                     StatBadgeCard(
-                      count: '3',
+                      count: '${unpaidBills.length}',
                       label: 'Upcoming Bills',
-                      subtext: '₹4,860',
+                      subtext: '₹${totalUnpaidAmount.toStringAsFixed(0)}',
                       icon: Icons.receipt_long_rounded,
                       iconColor: ApnaColors.categoryBill,
                       backgroundColor: ApnaColors.errorBg,
                       onTap: () => context.go('/bills'),
                     ),
                     StatBadgeCard(
-                      count: '2',
-                      label: 'Expiring Warranties',
+                      count: '$activeWarrantiesCount',
+                      label: 'Active Warranties',
                       icon: Icons.verified_user_outlined,
                       iconColor: ApnaColors.categoryWarranty,
                       backgroundColor: ApnaColors.warningBg,
                       onTap: () => context.go('/warranty'),
                     ),
                     StatBadgeCard(
-                      count: '1',
-                      label: 'Upcoming Event',
-                      subtext: 'Doctor Appt',
-                      icon: Icons.calendar_today_rounded,
+                      count: '${documents.length}',
+                      label: 'Vault Documents',
+                      subtext: 'Encrypted',
+                      icon: Icons.folder_shared_outlined,
                       iconColor: ApnaColors.info,
                       backgroundColor: ApnaColors.infoBg,
-                      onTap: () => context.go('/calendar'),
+                      onTap: () => context.go('/documents'),
                     ),
                   ],
                 );
@@ -100,74 +121,77 @@ class DashboardPage extends ConsumerWidget {
             ),
             const SizedBox(height: 24),
 
-            // Quick Actions Bar
-            const Text('Quick Actions', style: ApnaTypography.headingSmall),
+            // Quick Actions
+            _buildSectionHeader('Quick Actions'),
             const SizedBox(height: 12),
             SingleChildScrollView(
               scrollDirection: Axis.horizontal,
               child: Row(
                 children: [
                   QuickActionItem(
-                    label: 'Add Document',
                     icon: Icons.upload_file_rounded,
+                    label: 'Add Document',
                     onTap: () => context.go('/documents/add'),
                   ),
-                  const SizedBox(width: 10),
+                  const SizedBox(width: 14),
                   QuickActionItem(
-                    label: 'Create Task',
                     icon: Icons.add_task_rounded,
-                    onTap: () => _showFeedback(context, 'Task creation modal'),
+                    label: 'Add Task',
+                    onTap: () => context.go('/tasks'),
                   ),
-                  const SizedBox(width: 10),
+                  const SizedBox(width: 14),
                   QuickActionItem(
-                    label: 'Add Bill',
-                    icon: Icons.add_card_rounded,
-                    onTap: () => _showFeedback(context, 'Bill entry dialog'),
+                    icon: Icons.payment_rounded,
+                    label: 'Pay Bills',
+                    onTap: () => context.go('/bills'),
                   ),
-                  const SizedBox(width: 10),
+                  const SizedBox(width: 14),
                   QuickActionItem(
-                    label: 'Add Note',
-                    icon: Icons.note_add_rounded,
-                    onTap: () => _showFeedback(context, 'Note editor'),
+                    icon: Icons.currency_rupee_rounded,
+                    label: 'Log Expense',
+                    onTap: () => context.go('/expenses'),
                   ),
-                  const SizedBox(width: 10),
+                  const SizedBox(width: 14),
                   QuickActionItem(
-                    label: 'Add Expense',
-                    icon: Icons.account_balance_wallet_rounded,
-                    onTap: () => _showFeedback(context, 'Expense tracker'),
+                    icon: Icons.verified_rounded,
+                    label: 'Add Warranty',
+                    onTap: () => context.go('/warranty'),
                   ),
                 ],
               ),
             ),
             const SizedBox(height: 28),
 
-            // Two-column split: Bills & Upcoming on Left, Documents on Right
+            // Two-Column Grid: Upcoming Bills & Recent Documents
             LayoutBuilder(
               builder: (context, constraints) {
-                final isWide = constraints.maxWidth >= 840;
+                final isWide = constraints.maxWidth > 800;
                 if (isWide) {
                   return Row(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Expanded(child: _buildUpcomingSection(context)),
+                      Expanded(child: _buildUpcomingBillsSection(context, unpaidBills)),
                       const SizedBox(width: 20),
-                      Expanded(child: _buildRecentDocumentsSection(context)),
+                      Expanded(child: _buildRecentDocumentsSection(context, documents)),
                     ],
                   );
                 }
                 return Column(
                   children: [
-                    _buildUpcomingSection(context),
+                    _buildUpcomingBillsSection(context, unpaidBills),
                     const SizedBox(height: 20),
-                    _buildRecentDocumentsSection(context),
+                    _buildRecentDocumentsSection(context, documents),
                   ],
                 );
               },
             ),
-            const SizedBox(height: 28),
+            const SizedBox(height: 32),
 
-            // Ecosystem & Security Highlights
-            _buildEcosystemPillars(),
+            // Connected Platform Pillars
+            _buildSectionHeader('Apna Connected Pillars (Zero-Cost Supabase Free Tier)'),
+            const SizedBox(height: 12),
+            _buildEcosystemPillars(context),
+            const SizedBox(height: 24),
           ],
         ),
       ),
@@ -178,11 +202,33 @@ class DashboardPage extends ConsumerWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Text('Good Morning, Shubham', style: ApnaTypography.headingLarge),
+        Wrap(
+          crossAxisAlignment: WrapCrossAlignment.center,
+          spacing: 8,
+          runSpacing: 4,
+          children: [
+            const Text('Good Morning, Shubham', style: ApnaTypography.headingLarge),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+              decoration: BoxDecoration(
+                color: ApnaColors.accent.withValues(alpha: 0.12),
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: Text(
+                '$workspaceName Workspace',
+                style: const TextStyle(
+                  color: ApnaColors.accentDark,
+                  fontSize: 12,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ),
+          ],
+        ),
         const SizedBox(height: 4),
-        Text(
-          "Here's what's happening in your $workspaceName space",
-          style: ApnaTypography.bodyMedium,
+        const Text(
+          'Here is your live household & personal summary across India.',
+          style: ApnaTypography.bodySmall,
         ),
       ],
     );
@@ -190,10 +236,11 @@ class DashboardPage extends ConsumerWidget {
 
   Widget _buildSearchBar() {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+      constraints: const BoxConstraints(maxWidth: 240),
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 9),
       decoration: BoxDecoration(
         color: ApnaColors.surface,
-        borderRadius: BorderRadius.circular(20),
+        borderRadius: BorderRadius.circular(10),
         border: Border.all(color: ApnaColors.border),
       ),
       child: const Row(
@@ -201,13 +248,15 @@ class DashboardPage extends ConsumerWidget {
         children: [
           Icon(Icons.search, size: 18, color: ApnaColors.textSecondary),
           SizedBox(width: 8),
-          Text('Search everything (⌘K)', style: ApnaTypography.bodySmall),
+          Flexible(
+            child: Text('Search everything (⌘K)', style: ApnaTypography.bodySmall, overflow: TextOverflow.ellipsis),
+          ),
         ],
       ),
     );
   }
 
-  Widget _buildUpcomingSection(BuildContext context) {
+  Widget _buildUpcomingBillsSection(BuildContext context, List<BillEntity> unpaidBills) {
     return Container(
       padding: const EdgeInsets.all(18),
       decoration: BoxDecoration(
@@ -222,7 +271,7 @@ class DashboardPage extends ConsumerWidget {
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               const Expanded(
-                child: Text('Recent & Upcoming Bills', style: ApnaTypography.headingSmall, maxLines: 1, overflow: TextOverflow.ellipsis),
+                child: Text('Live Upcoming Bills', style: ApnaTypography.headingSmall, maxLines: 1, overflow: TextOverflow.ellipsis),
               ),
               TextButton(
                 onPressed: () => context.go('/bills'),
@@ -231,32 +280,29 @@ class DashboardPage extends ConsumerWidget {
             ],
           ),
           const SizedBox(height: 10),
-          _buildBillRow(
-            context,
-            title: 'Electricity Bill',
-            subtitle: 'Due in 2 days • ₹1,850',
-            amount: 1850.0,
-            vpa: 'tneb@billpay',
-            isDueSoon: true,
-          ),
-          const Divider(height: 20),
-          _buildBillRow(
-            context,
-            title: 'Water Utility Bill',
-            subtitle: 'Due on 15 Jan • ₹620',
-            amount: 620.0,
-            vpa: 'cmwssb@upi',
-            isDueSoon: false,
-          ),
-          const Divider(height: 20),
-          _buildBillRow(
-            context,
-            title: 'Internet (Airtel Broadband)',
-            subtitle: 'Due on 20 Jan • ₹799',
-            amount: 799.0,
-            vpa: 'airtelbroadband@upi',
-            isDueSoon: false,
-          ),
+          if (unpaidBills.isEmpty)
+            const Padding(
+              padding: EdgeInsets.symmetric(vertical: 24),
+              child: Center(
+                child: Text('All bills paid! No pending dues.', style: TextStyle(color: ApnaColors.textSecondary)),
+              ),
+            )
+          else
+            ...unpaidBills.take(3).map((bill) {
+              return Column(
+                children: [
+                  _buildBillRow(
+                    context,
+                    title: bill.title,
+                    subtitle: 'Due ${DateFormat('dd MMM').format(bill.dueDate)} • ₹${bill.amount.toStringAsFixed(0)}',
+                    amount: bill.amount,
+                    vpa: bill.upiVpa ?? 'merchant@upi',
+                    isDueSoon: bill.isOverdue || bill.dueDate.difference(DateTime.now()).inDays <= 3,
+                  ),
+                  const Divider(height: 16),
+                ],
+              );
+            }),
         ],
       ),
     );
@@ -318,7 +364,9 @@ class DashboardPage extends ConsumerWidget {
             );
             if (!context.mounted) return;
             if (!launched) {
-              _showFeedback(context, 'Opening UPI payment intent for $title (₹$amount)');
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(content: Text('UPI Intent: $vpa (₹$amount)')),
+              );
             }
           },
           style: FilledButton.styleFrom(
@@ -334,7 +382,7 @@ class DashboardPage extends ConsumerWidget {
     );
   }
 
-  Widget _buildRecentDocumentsSection(BuildContext context) {
+  Widget _buildRecentDocumentsSection(BuildContext context, List<DocumentEntity> documents) {
     return Container(
       padding: const EdgeInsets.all(18),
       decoration: BoxDecoration(
@@ -349,7 +397,7 @@ class DashboardPage extends ConsumerWidget {
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               const Expanded(
-                child: Text('Recent Documents', style: ApnaTypography.headingSmall, maxLines: 1, overflow: TextOverflow.ellipsis),
+                child: Text('Live Vault Documents', style: ApnaTypography.headingSmall, maxLines: 1, overflow: TextOverflow.ellipsis),
               ),
               TextButton(
                 onPressed: () => context.go('/documents'),
@@ -358,103 +406,129 @@ class DashboardPage extends ConsumerWidget {
             ],
           ),
           const SizedBox(height: 10),
-          _buildDocItem('Home Insurance Policy.pdf', 'Insurance • Added today', Icons.security_rounded),
-          const Divider(height: 18),
-          _buildDocItem('Passport - Shubham.pdf', 'Identity/KYC • 1.1 MB • Yesterday', Icons.badge_rounded),
-          const Divider(height: 18),
-          _buildDocItem('Laptop Warranty.pdf', 'Warranty • 2.4 MB • 3 days ago', Icons.laptop_mac_rounded),
-          const Divider(height: 18),
-          _buildDocItem('Car RC.jpg', 'Vehicle • 3.2 MB • 3 days ago', Icons.directions_car_rounded),
+          if (documents.isEmpty)
+            const Padding(
+              padding: EdgeInsets.symmetric(vertical: 24),
+              child: Center(
+                child: Text('No documents uploaded yet.', style: TextStyle(color: ApnaColors.textSecondary)),
+              ),
+            )
+          else
+            ...documents.take(3).map((doc) {
+              return Column(
+                children: [
+                  _buildDocRow(
+                    context,
+                    title: doc.title,
+                    category: doc.category.name.toUpperCase(),
+                    timeAgo: DateFormat('dd MMM yyyy').format(doc.createdAt),
+                  ),
+                  const Divider(height: 16),
+                ],
+              );
+            }),
         ],
       ),
     );
   }
 
-  Widget _buildDocItem(String title, String subtitle, IconData icon) {
-    return Row(
-      children: [
-        Container(
-          padding: const EdgeInsets.all(8),
-          decoration: const BoxDecoration(
-            color: ApnaColors.surfaceSubtle,
-            borderRadius: BorderRadius.all(Radius.circular(8)),
-          ),
-          child: Icon(icon, color: ApnaColors.primary, size: 18),
+  Widget _buildDocRow(
+    BuildContext context, {
+    required String title,
+    required String category,
+    required String timeAgo,
+  }) {
+    return InkWell(
+      onTap: () => context.go('/documents'),
+      borderRadius: BorderRadius.circular(8),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(vertical: 4),
+        child: Row(
+          children: [
+            Container(
+              padding: const EdgeInsets.all(8),
+              decoration: BoxDecoration(
+                color: ApnaColors.surfaceSubtle,
+                borderRadius: BorderRadius.circular(10),
+              ),
+              child: const Icon(Icons.description_outlined, color: ApnaColors.primary, size: 20),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(title, style: ApnaTypography.titleMedium.copyWith(fontSize: 13), maxLines: 1, overflow: TextOverflow.ellipsis),
+                  const SizedBox(height: 2),
+                  Text('$category • Added $timeAgo', style: ApnaTypography.bodySmall.copyWith(fontSize: 11)),
+                ],
+              ),
+            ),
+            const Icon(Icons.arrow_forward_ios_rounded, size: 14, color: ApnaColors.textSecondary),
+          ],
         ),
-        const SizedBox(width: 12),
-        Expanded(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(title, style: ApnaTypography.titleMedium.copyWith(fontSize: 13), maxLines: 1, overflow: TextOverflow.ellipsis),
-              const SizedBox(height: 2),
-              Text(subtitle, style: ApnaTypography.bodySmall, maxLines: 1, overflow: TextOverflow.ellipsis),
-            ],
-          ),
-        ),
-        const Icon(Icons.arrow_forward_ios_rounded, size: 12, color: ApnaColors.textTertiary),
-      ],
-    );
-  }
-
-  Widget _buildEcosystemPillars() {
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: const BoxDecoration(
-        gradient: LinearGradient(
-          colors: [ApnaColors.primary, ApnaColors.primaryDark],
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-        ),
-        borderRadius: BorderRadius.all(Radius.circular(16)),
-      ),
-      child: LayoutBuilder(
-        builder: (context, constraints) {
-          return const Wrap(
-            alignment: WrapAlignment.spaceAround,
-            runSpacing: 14,
-            spacing: 14,
-            children: [
-              _PillarBadge(icon: Icons.sync_rounded, title: 'Real-time Sync', subtitle: 'All devices'),
-              _PillarBadge(icon: Icons.offline_pin_rounded, title: 'Offline Ready', subtitle: 'SQLite Outbox'),
-              _PillarBadge(icon: Icons.qr_code_rounded, title: 'UPI Payments', subtitle: 'GPay, PhonePe, Paytm'),
-              _PillarBadge(icon: Icons.verified_user_rounded, title: 'DPDP Compliant', subtitle: 'India Legal Notice'),
-            ],
-          );
-        },
       ),
     );
   }
 
-  static void _showFeedback(BuildContext context, String msg) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text(msg), duration: const Duration(seconds: 2)),
+  Widget _buildEcosystemPillars(BuildContext context) {
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final isWide = constraints.maxWidth > 700;
+        return GridView.count(
+          crossAxisCount: isWide ? 4 : 2,
+          crossAxisSpacing: 12,
+          mainAxisSpacing: 12,
+          shrinkWrap: true,
+          physics: const NeverScrollableScrollPhysics(),
+          childAspectRatio: isWide ? 2.2 : 1.6,
+          children: [
+            _buildPillarCard(context, 'Documents Vault', 'KYC, Property, Insurance', Icons.folder_shared_outlined, '/documents'),
+            _buildPillarCard(context, 'Tasks & Chores', 'Family reminders & chores', Icons.task_alt_rounded, '/tasks'),
+            _buildPillarCard(context, 'Bills & UPI', 'One-click NPCI intent pay', Icons.payment_rounded, '/bills'),
+            _buildPillarCard(context, 'Warranties', 'Claim & invoice vault', Icons.verified_user_outlined, '/warranty'),
+          ],
+        );
+      },
     );
   }
-}
 
-class _PillarBadge extends StatelessWidget {
-  final IconData icon;
-  final String title;
-  final String subtitle;
+  Widget _buildPillarCard(BuildContext context, String title, String subtitle, IconData icon, String route) {
+    return InkWell(
+      onTap: () => context.go(route),
+      borderRadius: BorderRadius.circular(14),
+      child: Container(
+        padding: const EdgeInsets.all(14),
+        decoration: BoxDecoration(
+          color: ApnaColors.surface,
+          borderRadius: BorderRadius.circular(14),
+          border: Border.all(color: ApnaColors.border),
+        ),
+        child: Row(
+          children: [
+            Icon(icon, color: ApnaColors.primary, size: 22),
+            const SizedBox(width: 10),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Text(title, style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 13), maxLines: 1, overflow: TextOverflow.ellipsis),
+                  const SizedBox(height: 2),
+                  Text(subtitle, style: ApnaTypography.bodySmall.copyWith(fontSize: 11), maxLines: 1, overflow: TextOverflow.ellipsis),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
 
-  const _PillarBadge({
-    required this.icon,
-    required this.title,
-    required this.subtitle,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Column(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        Icon(icon, color: ApnaColors.accentLight, size: 22),
-        const SizedBox(height: 4),
-        Text(title, style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 12)),
-        const SizedBox(height: 2),
-        Text(subtitle, style: const TextStyle(color: ApnaColors.textTertiary, fontSize: 10)),
-      ],
+  Widget _buildSectionHeader(String title) {
+    return Text(
+      title,
+      style: ApnaTypography.headingSmall,
     );
   }
 }
