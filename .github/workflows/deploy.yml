@@ -49,6 +49,40 @@ jobs:
           SUPABASE_ANON_KEY=${{ secrets.SUPABASE_ANON_KEY }}
           EOF
 
+      - name: Compute Release Version (Strictly Greater Than v1.0.2)
+        id: release_version
+        run: |
+          git fetch --tags --force
+          LATEST_TAG=$(git tag -l "v[0-9]*.[0-9]*.[0-9]*" | grep -v "\-b" | sort -V | tail -n 1)
+          if [ -z "$LATEST_TAG" ]; then
+            LATEST_TAG="v1.0.2"
+          fi
+          LATEST_VER="${LATEST_TAG#v}"
+          
+          PUBSPEC_VER=$(grep '^version:' pubspec.yaml | awk '{print $2}' | cut -d'+' -f1)
+          HIGHER_VER=$(printf '%s\n%s' "$LATEST_VER" "$PUBSPEC_VER" | sort -V | tail -n 1)
+          
+          if [ "$PUBSPEC_VER" = "$LATEST_VER" ] || [ "$HIGHER_VER" = "$LATEST_VER" ]; then
+            IFS="." read -r MAJOR MINOR PATCH <<< "$LATEST_VER"
+            NEXT_PATCH=$((PATCH + 1))
+            TARGET_VERSION="${MAJOR}.${MINOR}.${NEXT_PATCH}"
+          else
+            TARGET_VERSION="$PUBSPEC_VER"
+          fi
+          
+          TAG_NAME="v${TARGET_VERSION}"
+          if git rev-parse "$TAG_NAME" >/dev/null 2>&1; then
+            TAG_NAME="${TAG_NAME}-b${{ github.run_number }}"
+          fi
+          
+          echo "tag=${TAG_NAME}" >> $GITHUB_OUTPUT
+          echo "version=${TARGET_VERSION}" >> $GITHUB_OUTPUT
+          
+          # Update pubspec.yaml so flutter build apk and web build with exact version
+          sed -i "s/^version: .*/version: ${TARGET_VERSION}+${{ github.run_number }}/" pubspec.yaml
+          echo "Computed Tag Name: ${TAG_NAME}"
+          echo "Updated pubspec version: $(grep '^version:' pubspec.yaml)"
+
       - name: Install Dependencies
         run: flutter pub get
 
@@ -94,13 +128,6 @@ jobs:
             exit 1
           fi
 
-      - name: Compute Release Version Tag
-        id: release_version
-        run: |
-          BASE_VERSION=$(grep '^version:' pubspec.yaml | awk '{print $2}' | cut -d'+' -f1)
-          TAG_NAME="v${BASE_VERSION}-b${{ github.run_number }}"
-          echo "tag=${TAG_NAME}" >> $GITHUB_OUTPUT
-          echo "base_version=${BASE_VERSION}" >> $GITHUB_OUTPUT
 
       - name: Create Versioned GitHub Release
         uses: softprops/action-gh-release@v2
