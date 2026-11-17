@@ -107,28 +107,32 @@ jobs:
         if: startsWith(github.ref, 'refs/tags/') || github.ref == 'refs/heads/main'
         with:
           tag_name: ${{ steps.release_version.outputs.tag }}
+          target_commitish: ${{ github.sha }}
           name: "Apna Release ${{ steps.release_version.outputs.tag }}"
+          make_latest: true
           body: |
             ## Apna Release ${{ steps.release_version.outputs.tag }}
             - **Commit**: `${{ github.sha }}`
             - **Web URL**: https://shubha95m.github.io/apna/
-            - **APK Download**: https://jkmdshurqjjcwshnfihi.supabase.co/storage/v1/object/public/releases/apna.apk
+            - **APK Direct Download**: https://jkmdshurqjjcwshnfihi.supabase.co/storage/v1/object/public/releases/apna.apk
           files: build/app/outputs/flutter-apk/app-release.apk
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Update Floating Latest Release
+      - name: Update Floating Latest Tag Release
         uses: softprops/action-gh-release@v2
         if: startsWith(github.ref, 'refs/tags/') || github.ref == 'refs/heads/main'
         with:
           tag_name: "v1.0.0-latest"
-          name: "Apna Production Release (Latest)"
+          target_commitish: ${{ github.sha }}
+          name: "Apna Production Release (Latest Direct Link)"
+          make_latest: false
           body: |
             ## Apna Production Release (Latest)
             - **Latest Version**: `${{ steps.release_version.outputs.tag }}`
             - **Commit**: `${{ github.sha }}`
             - **Web URL**: https://shubha95m.github.io/apna/
-            - **APK Download**: https://jkmdshurqjjcwshnfihi.supabase.co/storage/v1/object/public/releases/apna.apk
+            - **APK Direct Download**: https://jkmdshurqjjcwshnfihi.supabase.co/storage/v1/object/public/releases/apna.apk
           files: build/app/outputs/flutter-apk/app-release.apk
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

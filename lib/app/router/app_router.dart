@@ -14,6 +14,10 @@ import '../../features/documents/presentation/providers/document_providers.dart'
 import '../../features/expenses/presentation/pages/expenses_page.dart';
 import '../../features/tasks/presentation/pages/tasks_page.dart';
 import '../../features/warranties/presentation/pages/warranties_page.dart';
+import '../../features/notes/presentation/pages/notes_page.dart';
+import '../../features/calendar/presentation/pages/calendar_page.dart';
+import '../../features/grocery/presentation/pages/grocery_page.dart';
+import '../../features/health/presentation/pages/health_page.dart';
 import '../../shared/widgets/responsive_scaffold.dart';
 
 final appRouterProvider = Provider<GoRouter>((ref) {
@@ -129,7 +133,7 @@ final appRouterProvider = Provider<GoRouter>((ref) {
           ),
           GoRoute(
             path: '/notes',
-            builder: (context, state) => _buildPlaceholder(context, 'Notes & Documentation'),
+            builder: (context, state) => const NotesPage(),
           ),
           GoRoute(
             path: '/bills',
@@ -145,11 +149,11 @@ final appRouterProvider = Provider<GoRouter>((ref) {
           ),
           GoRoute(
             path: '/calendar',
-            builder: (context, state) => _buildPlaceholder(context, 'Calendar & Reminders'),
+            builder: (context, state) => const CalendarPage(),
           ),
           GoRoute(
             path: '/health',
-            builder: (context, state) => _buildPlaceholder(context, 'Health & Medical Vault'),
+            builder: (context, state) => const HealthPage(),
           ),
           GoRoute(
             path: '/assets',
@@ -157,7 +161,7 @@ final appRouterProvider = Provider<GoRouter>((ref) {
           ),
           GoRoute(
             path: '/grocery',
-            builder: (context, state) => _buildPlaceholder(context, 'Grocery & Shopping Lists'),
+            builder: (context, state) => const GroceryPage(),
           ),
           GoRoute(
             path: '/contacts',
