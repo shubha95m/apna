@@ -50,11 +50,11 @@ final appRouterProvider = Provider<GoRouter>((ref) {
         builder: (context, state, child) {
           int calculateIndex(String path) {
             if (path.startsWith('/documents')) return 1;
-            if (path.startsWith('/tasks')) return 2;
-            if (path.startsWith('/notes')) return 3;
-            if (path.startsWith('/bills')) return 4;
+            if (path.startsWith('/bills')) return 2;
+            if (path.startsWith('/tasks')) return 3;
+            if (path.startsWith('/expenses')) return 4;
             if (path.startsWith('/warranty')) return 5;
-            if (path.startsWith('/expenses')) return 6;
+            if (path.startsWith('/notes')) return 6;
             if (path.startsWith('/calendar')) return 7;
             if (path.startsWith('/health')) return 8;
             if (path.startsWith('/assets')) return 9;

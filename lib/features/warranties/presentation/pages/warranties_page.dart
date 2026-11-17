@@ -223,7 +223,8 @@ class _WarrantiesPageState extends ConsumerState<WarrantiesPage> {
 
     return Scaffold(
       backgroundColor: ApnaColors.background,
-      body: warrantiesAsync.when(
+      body: SafeArea(
+        child: warrantiesAsync.when(
         loading: () => const Center(child: CircularProgressIndicator()),
         error: (err, _) => Center(
           child: Column(
@@ -357,8 +358,9 @@ class _WarrantiesPageState extends ConsumerState<WarrantiesPage> {
           );
         },
       ),
-    );
-  }
+    ),
+  );
+}
 
   Widget _buildFilterChip(String filterKey, String label) {
     final isSelected = _filter == filterKey;

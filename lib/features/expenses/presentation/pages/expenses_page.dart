@@ -189,7 +189,8 @@ class _ExpensesPageState extends ConsumerState<ExpensesPage> {
 
     return Scaffold(
       backgroundColor: ApnaColors.background,
-      body: expensesAsync.when(
+      body: SafeArea(
+        child: expensesAsync.when(
         loading: () => const Center(child: CircularProgressIndicator()),
         error: (err, _) => Center(
           child: Column(
@@ -391,8 +392,9 @@ class _ExpensesPageState extends ConsumerState<ExpensesPage> {
           );
         },
       ),
-    );
-  }
+    ),
+  );
+}
 
   Widget _buildFilterChip(String category, String label) {
     final isSelected = _selectedCategory == category;

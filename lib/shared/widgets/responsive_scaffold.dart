@@ -35,11 +35,11 @@ class ApnaResponsiveScaffold extends StatelessWidget {
   static const List<NavDestinationItem> destinations = [
     NavDestinationItem(label: 'Home', icon: Icons.home_rounded, route: '/'),
     NavDestinationItem(label: 'Documents', icon: Icons.folder_rounded, route: '/documents'),
-    NavDestinationItem(label: 'Tasks', icon: Icons.check_circle_outline_rounded, route: '/tasks'),
-    NavDestinationItem(label: 'Notes', icon: Icons.note_alt_outlined, route: '/notes'),
     NavDestinationItem(label: 'Bills & Payments', icon: Icons.receipt_long_rounded, route: '/bills'),
-    NavDestinationItem(label: 'Warranty', icon: Icons.verified_user_outlined, route: '/warranty'),
+    NavDestinationItem(label: 'Tasks', icon: Icons.check_circle_outline_rounded, route: '/tasks'),
     NavDestinationItem(label: 'Expenses', icon: Icons.account_balance_wallet_outlined, route: '/expenses'),
+    NavDestinationItem(label: 'Warranty', icon: Icons.verified_user_outlined, route: '/warranty'),
+    NavDestinationItem(label: 'Notes', icon: Icons.note_alt_outlined, route: '/notes'),
     NavDestinationItem(label: 'Calendar', icon: Icons.calendar_today_rounded, route: '/calendar'),
     NavDestinationItem(label: 'Health', icon: Icons.favorite_border_rounded, route: '/health'),
     NavDestinationItem(label: 'Property & Assets', icon: Icons.apartment_rounded, route: '/assets'),
@@ -79,13 +79,21 @@ class ApnaResponsiveScaffold extends StatelessWidget {
     }
 
     // Mobile layout
+    final isPrimaryTab = selectedIndex >= 0 && selectedIndex < 5;
+
     return Scaffold(
+      drawer: Drawer(
+        backgroundColor: ApnaColors.surface,
+        child: SafeArea(
+          child: _buildDesktopSidebar(context, isDrawer: true),
+        ),
+      ),
       body: body,
       bottomNavigationBar: NavigationBar(
-        selectedIndex: selectedIndex.clamp(0, 4),
+        selectedIndex: isPrimaryTab ? selectedIndex : 0,
         onDestinationSelected: onDestinationSelected,
         backgroundColor: ApnaColors.surface,
-        indicatorColor: ApnaColors.surfaceSubtle,
+        indicatorColor: isPrimaryTab ? ApnaColors.surfaceSubtle : Colors.transparent,
         destinations: destinations.take(5).map((d) {
           return NavigationDestination(
             icon: Icon(d.icon),
@@ -96,9 +104,9 @@ class ApnaResponsiveScaffold extends StatelessWidget {
     );
   }
 
-  Widget _buildDesktopSidebar(BuildContext context) {
+  Widget _buildDesktopSidebar(BuildContext context, {bool isDrawer = false}) {
     return Container(
-      width: 260,
+      width: isDrawer ? null : 260,
       color: ApnaColors.surface,
       child: Column(
         children: [
@@ -171,7 +179,12 @@ class ApnaResponsiveScaffold extends StatelessWidget {
                         fontWeight: isSelected ? FontWeight.w600 : FontWeight.w400,
                       ),
                     ),
-                    onTap: () => onDestinationSelected(index),
+                    onTap: () {
+                      if (isDrawer) {
+                        Navigator.of(context).maybePop();
+                      }
+                      onDestinationSelected(index);
+                    },
                   ),
                 );
               },

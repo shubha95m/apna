@@ -56,9 +56,10 @@ class _DashboardPageState extends ConsumerState<DashboardPage> {
 
     return Scaffold(
       backgroundColor: ApnaColors.background,
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 20),
-        child: Column(
+      body: SafeArea(
+        child: SingleChildScrollView(
+          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 20),
+          child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             // Top Bar Greeting
@@ -222,7 +223,8 @@ class _DashboardPageState extends ConsumerState<DashboardPage> {
           ],
         ),
       ),
-    );
+    ),
+  );
   }
 
   Widget _buildGreeting(BuildContext context, WidgetRef ref, String workspaceName) {

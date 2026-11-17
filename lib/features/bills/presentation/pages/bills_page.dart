@@ -255,7 +255,8 @@ class _BillsPageState extends ConsumerState<BillsPage> {
 
     return Scaffold(
       backgroundColor: ApnaColors.background,
-      body: billsAsync.when(
+      body: SafeArea(
+        child: billsAsync.when(
         loading: () => const Center(child: CircularProgressIndicator()),
         error: (err, _) => Center(
           child: Column(
@@ -440,8 +441,9 @@ class _BillsPageState extends ConsumerState<BillsPage> {
           );
         },
       ),
-    );
-  }
+    ),
+  );
+}
 
   Widget _buildFilterChip(String filterKey, String label) {
     final isSelected = _filter == filterKey;

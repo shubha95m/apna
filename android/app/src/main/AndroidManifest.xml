@@ -10,11 +10,7 @@
     <!-- Android 13+ Notification Permission -->
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS"/>
 
-    <!-- Messaging / SMS for Automatic Bill & Utility Due Detection -->
-    <uses-permission android:name="android.permission.READ_SMS"/>
-    <uses-permission android:name="android.permission.RECEIVE_SMS"/>
-
-    <!-- Camera for Document & Receipt Scanning -->
+    <!-- Camera for Document, Invoice & Receipt Scanning -->
     <uses-permission android:name="android.permission.CAMERA"/>
 
     <!-- Storage permissions backwards-compatible for Android 7 through 14 -->

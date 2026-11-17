@@ -26,9 +26,9 @@ class SmartSyncPermissionDialog extends StatefulWidget {
 }
 
 class _SmartSyncPermissionDialogState extends State<SmartSyncPermissionDialog> {
-  bool _smsPermission = true;
   bool _notificationPermission = true;
   bool _cameraPermission = true;
+  bool _storagePermission = true;
   bool _isRequesting = false;
 
   Future<void> _handleGrantPermissions() async {
@@ -36,28 +36,28 @@ class _SmartSyncPermissionDialogState extends State<SmartSyncPermissionDialog> {
 
     try {
       if (!kIsWeb) {
-        if (_smsPermission) {
-          await Permission.sms.request();
-        }
         if (_notificationPermission) {
           await Permission.notification.request();
         }
         if (_cameraPermission) {
           await Permission.camera.request();
         }
+        if (_storagePermission) {
+          await Permission.photos.request();
+        }
       }
 
       final prefs = await SharedPreferences.getInstance();
       await prefs.setBool('apna_permissions_requested', true);
-      await prefs.setBool('apna_sms_sync_enabled', _smsPermission);
       await prefs.setBool('apna_notifications_enabled', _notificationPermission);
       await prefs.setBool('apna_camera_enabled', _cameraPermission);
+      await prefs.setBool('apna_storage_enabled', _storagePermission);
 
       if (mounted) {
         Navigator.of(context).pop();
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
-            content: Text('Smart Auto-Sync enabled! Apna will automatically track upcoming bills & due dates.'),
+            content: Text('Permissions saved! Apna is ready to scan documents, send due alerts, and protect your family records.'),
             backgroundColor: ApnaColors.success,
           ),
         );
@@ -133,18 +133,18 @@ class _SmartSyncPermissionDialogState extends State<SmartSyncPermissionDialog> {
             const SizedBox(height: 20),
 
             const Text(
-              'In compliance with DPDP Act 2023, Apna processes financial notifications and messages on-device to auto-populate your workspace with zero manual effort:',
+              'In compliance with DPDP Act 2023 & Google Play Protect guidelines, Apna only requests official device capabilities needed to organize your household documents and bills:',
               style: ApnaTypography.bodyMedium,
             ),
             const SizedBox(height: 18),
 
-            // Permission Item 1: SMS / Messaging
+            // Permission Item 1: Camera
             _buildPermissionTile(
-              icon: Icons.sms_outlined,
-              title: 'Auto-Read Utility Bills & Bank SMS',
-              subtitle: 'Reads incoming SMS from electricity, water, gas, broadband & bank cards to populate bills and due dates.',
-              value: _smsPermission,
-              onChanged: (val) => setState(() => _smsPermission = val),
+              icon: Icons.document_scanner_outlined,
+              title: 'Camera Document & Receipt Scanner',
+              subtitle: 'Allows photographing paper bills, retail receipts, warranty cards, and KYC documents to attach directly to records.',
+              value: _cameraPermission,
+              onChanged: (val) => setState(() => _cameraPermission = val),
             ),
             const SizedBox(height: 12),
 
@@ -152,19 +152,19 @@ class _SmartSyncPermissionDialogState extends State<SmartSyncPermissionDialog> {
             _buildPermissionTile(
               icon: Icons.notifications_active_outlined,
               title: 'Timely Due Date & Warranty Alerts',
-              subtitle: 'Notifies you 3 days and 1 day prior to bill due dates and appliance warranty expirations.',
+              subtitle: 'Notifies you prior to utility bill due dates, policy renewals, and appliance warranty expirations.',
               value: _notificationPermission,
               onChanged: (val) => setState(() => _notificationPermission = val),
             ),
             const SizedBox(height: 12),
 
-            // Permission Item 3: Camera & Receipts
+            // Permission Item 3: Photos & Files
             _buildPermissionTile(
-              icon: Icons.document_scanner_outlined,
-              title: 'Receipt & Warranty Card Scanner',
-              subtitle: 'Allows photographing paper bills, retail receipts, and equipment serial stickers to attach directly to records.',
-              value: _cameraPermission,
-              onChanged: (val) => setState(() => _cameraPermission = val),
+              icon: Icons.photo_library_outlined,
+              title: 'Document & PDF Import Access',
+              subtitle: 'Select PDF statements, receipts, and warranty files from device storage to securely encrypt in your vault.',
+              value: _storagePermission,
+              onChanged: (val) => setState(() => _storagePermission = val),
             ),
             const SizedBox(height: 24),
 

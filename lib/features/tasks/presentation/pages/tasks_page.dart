@@ -153,7 +153,8 @@ class _TasksPageState extends ConsumerState<TasksPage> {
 
     return Scaffold(
       backgroundColor: ApnaColors.background,
-      body: tasksAsync.when(
+      body: SafeArea(
+        child: tasksAsync.when(
         loading: () => const Center(child: CircularProgressIndicator()),
         error: (err, _) => Center(
           child: Column(
@@ -289,8 +290,9 @@ class _TasksPageState extends ConsumerState<TasksPage> {
           );
         },
       ),
-    );
-  }
+    ),
+  );
+}
 
   Widget _buildFilterChip(String filterKey, String label) {
     final isSelected = _filter == filterKey;
