@@ -94,15 +94,42 @@ jobs:
             exit 1
           fi
 
-      - name: Create or Update GitHub Release
+      - name: Compute Release Version Tag
+        id: release_version
+        run: |
+          BASE_VERSION=$(grep '^version:' pubspec.yaml | awk '{print $2}' | cut -d'+' -f1)
+          TAG_NAME="v${BASE_VERSION}-b${{ github.run_number }}"
+          echo "tag=${TAG_NAME}" >> $GITHUB_OUTPUT
+          echo "base_version=${BASE_VERSION}" >> $GITHUB_OUTPUT
+
+      - name: Create Versioned GitHub Release
+        uses: softprops/action-gh-release@v2
+        if: startsWith(github.ref, 'refs/tags/') || github.ref == 'refs/heads/main'
+        with:
+          tag_name: ${{ steps.release_version.outputs.tag }}
+          name: "Apna Release ${{ steps.release_version.outputs.tag }}"
+          body: |
+            ## Apna Release ${{ steps.release_version.outputs.tag }}
+            - **Commit**: `${{ github.sha }}`
+            - **Web URL**: https://shubha95m.github.io/apna/
+            - **APK Download**: https://jkmdshurqjjcwshnfihi.supabase.co/storage/v1/object/public/releases/apna.apk
+          files: |
+            build/app/outputs/flutter-apk/app-arm64-v8a-release.apk
+            build/app/outputs/flutter-apk/app-armeabi-v7a-release.apk
+            build/app/outputs/flutter-apk/app-x86_64-release.apk
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Update Floating Latest Release
         uses: softprops/action-gh-release@v2
         if: startsWith(github.ref, 'refs/tags/') || github.ref == 'refs/heads/main'
         with:
           tag_name: "v1.0.0-latest"
           name: "Apna Production Release (Latest)"
           body: |
-            ## Apna Production Release
-            - Automated build from commit `${{ github.sha }}`
+            ## Apna Production Release (Latest)
+            - **Latest Version**: `${{ steps.release_version.outputs.tag }}`
+            - **Commit**: `${{ github.sha }}`
             - **Web URL**: https://shubha95m.github.io/apna/
             - **APK Download**: https://jkmdshurqjjcwshnfihi.supabase.co/storage/v1/object/public/releases/apna.apk
           files: |
