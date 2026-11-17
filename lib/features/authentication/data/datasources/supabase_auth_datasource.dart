@@ -244,7 +244,9 @@ class SupabaseAuthDataSourceImpl implements SupabaseAuthDataSource {
         await Supabase.instance.client.auth.signOut();
       } catch (_) {}
     }
-    await clearSavedDeviceAccount();
+    // Note: Do not clear saved device account on normal sign-out, so the user
+    // can unlock with 1-touch fingerprint/biometrics like PhonePe/GPay on return.
+    // Device account is only cleared if the user explicitly chooses "Use another account".
     _cachedUser = null;
     _authStreamController.add(null);
   }

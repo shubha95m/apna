@@ -306,15 +306,33 @@ class _BillsPageState extends ConsumerState<BillsPage> {
                               ),
                             ],
                           ),
-                          FilledButton.icon(
-                            onPressed: () => _showAddBillDialog(context),
-                            icon: const Icon(Icons.add, size: 18),
-                            label: const Text('Add Bill'),
-                            style: FilledButton.styleFrom(
-                              backgroundColor: ApnaColors.primary,
-                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                          if (ref.watch(canWriteCurrentWorkspaceProvider))
+                            FilledButton.icon(
+                              onPressed: () => _showAddBillDialog(context),
+                              icon: const Icon(Icons.add, size: 18),
+                              label: const Text('Add Bill'),
+                              style: FilledButton.styleFrom(
+                                backgroundColor: ApnaColors.primary,
+                                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                              ),
+                            )
+                          else
+                            Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                              decoration: BoxDecoration(
+                                color: ApnaColors.surfaceSubtle,
+                                borderRadius: BorderRadius.circular(8),
+                                border: Border.all(color: ApnaColors.border),
+                              ),
+                              child: const Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Icon(Icons.visibility_outlined, size: 14, color: ApnaColors.textSecondary),
+                                  SizedBox(width: 4),
+                                  Text('Read Only', style: TextStyle(fontSize: 12, color: ApnaColors.textSecondary, fontWeight: FontWeight.w500)),
+                                ],
+                              ),
                             ),
-                          ),
                         ],
                       ),
                       const SizedBox(height: 20),

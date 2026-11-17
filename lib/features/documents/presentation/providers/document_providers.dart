@@ -6,6 +6,19 @@ import '../../data/datasources/document_remote_datasource.dart';
 import '../../data/repositories/document_repository_impl.dart';
 import '../../domain/entities/document_entity.dart';
 import '../../domain/repositories/document_repository.dart';
+import '../../../workspaces/presentation/providers/workspace_providers.dart';
+
+export '../../../workspaces/presentation/providers/workspace_providers.dart'
+    show
+        activeWorkspaceIdProvider,
+        activeWorkspaceNameProvider,
+        activeWorkspaceProvider,
+        activeWorkspaceRoleProvider,
+        canWriteCurrentWorkspaceProvider,
+        canManageCurrentWorkspaceProvider,
+        selectedWorkspaceIdProvider,
+        userWorkspacesProvider,
+        workspaceMembersProvider;
 
 final documentLocalDataSourceProvider = Provider<DocumentLocalDataSource>((ref) {
   return DocumentLocalDataSourceImpl();
@@ -24,11 +37,6 @@ final documentRepositoryProvider = Provider<DocumentRepository>((ref) {
     syncEngine: SyncEngine(),
   );
 });
-
-// Seeded Family workspace UUID in Supabase
-final activeWorkspaceIdProvider = StateProvider<String>((ref) => 'c0eebc99-9c0b-4ef8-bb6d-6bb9bd380a02');
-
-final activeWorkspaceNameProvider = StateProvider<String>((ref) => 'Family');
 
 class DocumentListNotifier extends StateNotifier<AsyncValue<List<DocumentEntity>>> {
   final DocumentRepository _repository;

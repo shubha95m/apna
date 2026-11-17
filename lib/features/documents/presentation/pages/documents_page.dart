@@ -105,6 +105,7 @@ class _DocumentsPageState extends ConsumerState<DocumentsPage> {
   }
 
   void _showDocumentDetails(DocumentEntity doc) {
+    final canWrite = ref.read(canWriteCurrentWorkspaceProvider);
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
@@ -246,20 +247,22 @@ class _DocumentsPageState extends ConsumerState<DocumentsPage> {
                         },
                       ),
                     ),
-                    const SizedBox(width: 12),
-                    OutlinedButton(
-                      style: OutlinedButton.styleFrom(
-                        foregroundColor: ApnaColors.error,
-                        side: const BorderSide(color: ApnaColors.error),
-                        padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 16),
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                    if (canWrite) ...[
+                      const SizedBox(width: 12),
+                      OutlinedButton(
+                        style: OutlinedButton.styleFrom(
+                          foregroundColor: ApnaColors.error,
+                          side: const BorderSide(color: ApnaColors.error),
+                          padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 16),
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                        ),
+                        onPressed: () {
+                          Navigator.pop(ctx);
+                          _confirmDeleteDoc(doc);
+                        },
+                        child: const Icon(Icons.delete_outline_rounded, size: 20),
                       ),
-                      onPressed: () {
-                        Navigator.pop(ctx);
-                        _confirmDeleteDoc(doc);
-                      },
-                      child: const Icon(Icons.delete_outline_rounded, size: 20),
-                    ),
+                    ],
                   ],
                 ),
               ],
@@ -347,17 +350,34 @@ class _DocumentsPageState extends ConsumerState<DocumentsPage> {
             tooltip: 'Refresh documents',
             onPressed: () => ref.read(documentListNotifierProvider.notifier).loadDocuments(),
           ),
-          FilledButton.icon(
-            onPressed: () => context.go('/documents/add'),
-            icon: const Icon(Icons.add_rounded, size: 18),
-            label: const Text('Add Document'),
-            style: FilledButton.styleFrom(
-              backgroundColor: ApnaColors.primary,
-              foregroundColor: Colors.white,
-              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+          if (ref.watch(canWriteCurrentWorkspaceProvider))
+            FilledButton.icon(
+              onPressed: () => context.go('/documents/add'),
+              icon: const Icon(Icons.add_rounded, size: 18),
+              label: const Text('Add Document'),
+              style: FilledButton.styleFrom(
+                backgroundColor: ApnaColors.primary,
+                foregroundColor: Colors.white,
+                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+              ),
+            )
+          else
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+              decoration: BoxDecoration(
+                color: ApnaColors.surfaceSubtle,
+                borderRadius: BorderRadius.circular(8),
+                border: Border.all(color: ApnaColors.border),
+              ),
+              child: const Row(
+                children: [
+                  Icon(Icons.visibility_outlined, size: 14, color: ApnaColors.textSecondary),
+                  SizedBox(width: 4),
+                  Text('Viewer (Read Only)', style: TextStyle(fontSize: 12, color: ApnaColors.textSecondary, fontWeight: FontWeight.w500)),
+                ],
+              ),
             ),
-          ),
           const SizedBox(width: 16),
         ],
       ),
@@ -742,7 +762,7 @@ class _DocumentsPageState extends ConsumerState<DocumentsPage> {
                 shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
               ),
             )
-          else
+          else if (ref.watch(canWriteCurrentWorkspaceProvider))
             FilledButton.icon(
               onPressed: () => context.go('/documents/add'),
               icon: const Icon(Icons.add_rounded, size: 18),
@@ -753,6 +773,11 @@ class _DocumentsPageState extends ConsumerState<DocumentsPage> {
                 padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
                 shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
               ),
+            )
+          else
+            const Text(
+              'No documents in this workspace yet. You have Read-Only view access.',
+              style: TextStyle(fontSize: 13, color: ApnaColors.textSecondary, fontStyle: FontStyle.italic),
             ),
         ],
       ),

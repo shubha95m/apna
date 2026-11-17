@@ -149,6 +149,7 @@ class _TasksPageState extends ConsumerState<TasksPage> {
   @override
   Widget build(BuildContext context) {
     final tasksAsync = ref.watch(taskListNotifierProvider);
+    final canWrite = ref.watch(canWriteCurrentWorkspaceProvider);
 
     return Scaffold(
       backgroundColor: ApnaColors.background,
@@ -203,15 +204,33 @@ class _TasksPageState extends ConsumerState<TasksPage> {
                               ),
                             ],
                           ),
-                          FilledButton.icon(
-                            onPressed: () => _showAddTaskDialog(context),
-                            icon: const Icon(Icons.add, size: 18),
-                            label: const Text('Add Task'),
-                            style: FilledButton.styleFrom(
-                              backgroundColor: ApnaColors.primary,
-                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                          if (canWrite)
+                            FilledButton.icon(
+                              onPressed: () => _showAddTaskDialog(context),
+                              icon: const Icon(Icons.add, size: 18),
+                              label: const Text('Add Task'),
+                              style: FilledButton.styleFrom(
+                                backgroundColor: ApnaColors.primary,
+                                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                              ),
+                            )
+                          else
+                            Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                              decoration: BoxDecoration(
+                                color: ApnaColors.surfaceSubtle,
+                                borderRadius: BorderRadius.circular(8),
+                                border: Border.all(color: ApnaColors.border),
+                              ),
+                              child: const Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Icon(Icons.visibility_outlined, size: 14, color: ApnaColors.textSecondary),
+                                  SizedBox(width: 4),
+                                  Text('Read Only', style: TextStyle(fontSize: 12, color: ApnaColors.textSecondary, fontWeight: FontWeight.w500)),
+                                ],
+                              ),
                             ),
-                          ),
                         ],
                       ),
                       const SizedBox(height: 20),
@@ -322,9 +341,11 @@ class _TasksPageState extends ConsumerState<TasksPage> {
               value: task.isCompleted,
               activeColor: ApnaColors.primary,
               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(6)),
-              onChanged: (_) {
-                ref.read(taskListNotifierProvider.notifier).toggleTaskStatus(task);
-              },
+              onChanged: ref.watch(canWriteCurrentWorkspaceProvider)
+                  ? (_) {
+                      ref.read(taskListNotifierProvider.notifier).toggleTaskStatus(task);
+                    }
+                  : null,
             ),
             const SizedBox(width: 8),
 
@@ -382,13 +403,14 @@ class _TasksPageState extends ConsumerState<TasksPage> {
             ),
 
             // Delete action
-            IconButton(
-              icon: const Icon(Icons.delete_outline_rounded, size: 20, color: ApnaColors.textSecondary),
-              tooltip: 'Delete Task',
-              onPressed: () {
-                ref.read(taskListNotifierProvider.notifier).deleteTask(task.id);
-              },
-            ),
+            if (ref.watch(canWriteCurrentWorkspaceProvider))
+              IconButton(
+                icon: const Icon(Icons.delete_outline_rounded, size: 20, color: ApnaColors.textSecondary),
+                tooltip: 'Delete Task',
+                onPressed: () {
+                  ref.read(taskListNotifierProvider.notifier).deleteTask(task.id);
+                },
+              ),
           ],
         ),
       ),

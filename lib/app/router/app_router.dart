@@ -71,13 +71,18 @@ final appRouterProvider = Provider<GoRouter>((ref) {
                 selectedIndex: calculateIndex(state.uri.path),
                 workspaceName: workspaceName,
                 onWorkspaceToggle: () {
-                  final current = ref.read(activeWorkspaceNameProvider);
-                  if (current == 'Family') {
-                    ref.read(activeWorkspaceNameProvider.notifier).state = 'Personal';
-                    ref.read(activeWorkspaceIdProvider.notifier).state = 'c0eebc99-9c0b-4ef8-bb6d-6bb9bd380a01';
+                  final workspaces = ref.read(userWorkspacesProvider).valueOrNull ?? [];
+                  final active = ref.read(activeWorkspaceProvider);
+                  if (active?.isFamily == true) {
+                    final personal = workspaces.where((w) => w.isPersonal).firstOrNull;
+                    if (personal != null) {
+                      ref.read(selectedWorkspaceIdProvider.notifier).state = personal.id;
+                    }
                   } else {
-                    ref.read(activeWorkspaceNameProvider.notifier).state = 'Family';
-                    ref.read(activeWorkspaceIdProvider.notifier).state = 'c0eebc99-9c0b-4ef8-bb6d-6bb9bd380a02';
+                    final family = workspaces.where((w) => w.isFamily).firstOrNull;
+                    if (family != null) {
+                      ref.read(selectedWorkspaceIdProvider.notifier).state = family.id;
+                    }
                   }
                 },
                 onSignOut: () => ref.read(authControllerProvider.notifier).signOut(),

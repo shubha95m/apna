@@ -15,6 +15,7 @@ import '../../documents/presentation/providers/document_providers.dart';
 import '../../permissions/presentation/smart_sync_permission_dialog.dart';
 import '../../tasks/presentation/providers/task_providers.dart';
 import '../../warranties/presentation/providers/warranty_providers.dart';
+import '../../workspaces/presentation/widgets/manage_family_members_dialog.dart';
 
 class DashboardPage extends ConsumerStatefulWidget {
   const DashboardPage({super.key});
@@ -239,6 +240,9 @@ class _DashboardPageState extends ConsumerState<DashboardPage> {
         ? '${rawName[0].toUpperCase()}${rawName.length > 1 ? rawName.substring(1) : ''}'
         : 'User';
 
+    final activeWs = ref.watch(activeWorkspaceProvider);
+    final userRole = ref.watch(activeWorkspaceRoleProvider);
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -255,7 +259,7 @@ class _DashboardPageState extends ConsumerState<DashboardPage> {
                 borderRadius: BorderRadius.circular(12),
               ),
               child: Text(
-                '$workspaceName Workspace',
+                '$workspaceName (${userRole.toUpperCase()})',
                 style: const TextStyle(
                   color: ApnaColors.accentDark,
                   fontSize: 12,
@@ -263,6 +267,34 @@ class _DashboardPageState extends ConsumerState<DashboardPage> {
                 ),
               ),
             ),
+            if (activeWs != null && activeWs.isFamily)
+              InkWell(
+                onTap: () => ManageFamilyMembersDialog.show(context, activeWs),
+                borderRadius: BorderRadius.circular(12),
+                child: Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                  decoration: BoxDecoration(
+                    color: ApnaColors.primary.withValues(alpha: 0.1),
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(color: ApnaColors.primary.withValues(alpha: 0.3)),
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      const Icon(Icons.group_outlined, size: 14, color: ApnaColors.primary),
+                      const SizedBox(width: 4),
+                      Text(
+                        activeWs.isAdmin ? 'Manage Family' : 'Family Members',
+                        style: const TextStyle(
+                          color: ApnaColors.primary,
+                          fontSize: 12,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
           ],
         ),
         const SizedBox(height: 4),
@@ -276,6 +308,8 @@ class _DashboardPageState extends ConsumerState<DashboardPage> {
 
   Widget _buildUserProfileButton(BuildContext context, WidgetRef ref, String workspaceName) {
     final authUser = ref.watch(authControllerProvider).valueOrNull;
+    final activeWs = ref.watch(activeWorkspaceProvider);
+    final userRole = ref.watch(activeWorkspaceRoleProvider);
     final email = authUser?.email ?? 'user@apna.family';
     final fullName = authUser?.fullName?.trim() ?? 'Apna User';
     final initial = fullName.isNotEmpty ? fullName[0].toUpperCase() : 'U';
@@ -348,7 +382,7 @@ class _DashboardPageState extends ConsumerState<DashboardPage> {
                     const Icon(Icons.shield_outlined, size: 14, color: ApnaColors.accentDark),
                     const SizedBox(width: 6),
                     Text(
-                      'Workspace: $workspaceName',
+                      'Workspace: $workspaceName (${userRole.toUpperCase()})',
                       style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w600, color: ApnaColors.accentDark),
                     ),
                   ],
@@ -371,6 +405,20 @@ class _DashboardPageState extends ConsumerState<DashboardPage> {
             ],
           ),
         ),
+        if (activeWs?.isFamily == true)
+          PopupMenuItem<String>(
+            value: 'manage_family',
+            child: Row(
+              children: [
+                const Icon(Icons.group_outlined, size: 20, color: ApnaColors.accentDark),
+                const SizedBox(width: 12),
+                Text(
+                  activeWs?.isAdmin == true ? 'Manage Family Members' : 'View Family Members',
+                  style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w500),
+                ),
+              ],
+            ),
+          ),
         const PopupMenuItem<String>(
           value: 'sign_out',
           child: Row(
@@ -387,13 +435,23 @@ class _DashboardPageState extends ConsumerState<DashboardPage> {
       ],
       onSelected: (value) async {
         if (value == 'toggle_workspace') {
-          final current = ref.read(activeWorkspaceNameProvider);
-          if (current == 'Family') {
-            ref.read(activeWorkspaceNameProvider.notifier).state = 'Personal';
-            ref.read(activeWorkspaceIdProvider.notifier).state = 'c0eebc99-9c0b-4ef8-bb6d-6bb9bd380a01';
+          final workspaces = ref.read(userWorkspacesProvider).valueOrNull ?? [];
+          final active = ref.read(activeWorkspaceProvider);
+          if (active?.isFamily == true) {
+            final personal = workspaces.where((w) => w.isPersonal).firstOrNull;
+            if (personal != null) {
+              ref.read(selectedWorkspaceIdProvider.notifier).state = personal.id;
+            }
           } else {
-            ref.read(activeWorkspaceNameProvider.notifier).state = 'Family';
-            ref.read(activeWorkspaceIdProvider.notifier).state = 'c0eebc99-9c0b-4ef8-bb6d-6bb9bd380a02';
+            final family = workspaces.where((w) => w.isFamily).firstOrNull;
+            if (family != null) {
+              ref.read(selectedWorkspaceIdProvider.notifier).state = family.id;
+            }
+          }
+        } else if (value == 'manage_family') {
+          final active = ref.read(activeWorkspaceProvider);
+          if (active != null) {
+            ManageFamilyMembersDialog.show(context, active);
           }
         } else if (value == 'sign_out') {
           await ref.read(authControllerProvider.notifier).signOut();

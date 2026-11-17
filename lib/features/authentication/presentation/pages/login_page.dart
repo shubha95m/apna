@@ -77,10 +77,18 @@ class _LoginPageState extends ConsumerState<LoginPage> {
 
   Future<void> _handleBiometricUnlock() async {
     setState(() => _errorMessage = null);
+    final savedAccount = ref.read(savedDeviceAccountProvider).valueOrNull;
     final success = await ref.read(authControllerProvider.notifier).unlockWithBiometrics();
     if (!mounted) return;
     if (success) {
       context.go('/');
+    } else if (savedAccount == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Please sign in with email and password once to link your fingerprint to this device.'),
+          backgroundColor: ApnaColors.primary,
+        ),
+      );
     }
   }
 
@@ -415,7 +423,32 @@ class _LoginPageState extends ConsumerState<LoginPage> {
                       : const Text('Sign In to Workspace', style: TextStyle(fontWeight: FontWeight.w600, fontSize: 15)),
                 ),
               ),
-              const SizedBox(height: 20),
+              const SizedBox(height: 12),
+
+              // Prominent Fingerprint / Biometric Quick Unlock Button
+              SizedBox(
+                width: double.infinity,
+                height: 48,
+                child: OutlinedButton.icon(
+                  onPressed: isLoading ? null : _handleBiometricUnlock,
+                  icon: const Icon(Icons.fingerprint_rounded, size: 22, color: ApnaColors.primary),
+                  label: Text(
+                    savedAccount != null
+                        ? 'Unlock with Fingerprint (${savedAccount.displayName})'
+                        : 'Unlock with Biometrics (Touch / Face ID)',
+                    style: const TextStyle(
+                      color: ApnaColors.primary,
+                      fontWeight: FontWeight.w600,
+                      fontSize: 14,
+                    ),
+                  ),
+                  style: OutlinedButton.styleFrom(
+                    side: BorderSide(color: ApnaColors.primary.withOpacity(0.4), width: 1.5),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 16),
 
               // Register Link
               Center(
