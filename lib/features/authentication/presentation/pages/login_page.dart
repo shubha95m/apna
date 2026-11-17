@@ -25,6 +25,14 @@ class _LoginPageState extends ConsumerState<LoginPage> {
   Timer? _autoBiometricTimer;
 
   @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) _checkAndTriggerBiometric();
+    });
+  }
+
+  @override
   void dispose() {
     _autoBiometricTimer?.cancel();
     _emailController.dispose();
@@ -32,19 +40,22 @@ class _LoginPageState extends ConsumerState<LoginPage> {
     super.dispose();
   }
 
-  void _triggerAutoBiometric(SavedDeviceAccount savedAccount) {
+  void _checkAndTriggerBiometric() {
     if (_didAutoPromptBiometric) return;
-    _didAutoPromptBiometric = true;
     if (WidgetsBinding.instance.runtimeType.toString().contains('Test')) {
       return; // In widget tests, do not block test runner with pending native biometric prompts
     }
-    _autoBiometricTimer?.cancel();
-    // Allow the Android Activity to complete its initial draw and establish window focus
-    _autoBiometricTimer = Timer(const Duration(milliseconds: 600), () {
-      if (mounted && !_usePasswordFallback) {
-        _handleBiometricUnlock();
-      }
-    });
+    final savedAccount = ref.read(savedDeviceAccountProvider).valueOrNull;
+    if (savedAccount != null && !_usePasswordFallback) {
+      _didAutoPromptBiometric = true;
+      _autoBiometricTimer?.cancel();
+      // Allow the Android Activity to complete its initial draw and establish window focus
+      _autoBiometricTimer = Timer(const Duration(milliseconds: 700), () {
+        if (mounted && !_usePasswordFallback) {
+          _handleBiometricUnlock();
+        }
+      });
+    }
   }
 
   Future<void> _handleLogin() async {
@@ -119,6 +130,12 @@ class _LoginPageState extends ConsumerState<LoginPage> {
     final isLoading = authState.isLoading;
     final savedAccountAsync = ref.watch(savedDeviceAccountProvider);
 
+    ref.listen<AsyncValue<SavedDeviceAccount?>>(savedDeviceAccountProvider, (_, next) {
+      if (next.hasValue && next.value != null && !_didAutoPromptBiometric && !_usePasswordFallback) {
+        _checkAndTriggerBiometric();
+      }
+    });
+
     return Scaffold(
       backgroundColor: ApnaColors.background,
       body: Center(
@@ -129,7 +146,6 @@ class _LoginPageState extends ConsumerState<LoginPage> {
             child: savedAccountAsync.maybeWhen(
               data: (savedAccount) {
                 if (savedAccount != null && !_usePasswordFallback) {
-                  _triggerAutoBiometric(savedAccount);
                   return _buildPhonePeBiometricUnlockView(context, savedAccount, isLoading);
                 }
                 return _buildPasswordForm(context, isLoading, savedAccount);
