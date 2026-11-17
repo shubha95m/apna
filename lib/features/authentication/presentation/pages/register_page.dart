@@ -51,30 +51,18 @@ class _RegisterPageState extends ConsumerState<RegisterPage> {
     } else {
       final rawError = ref.read(authControllerProvider).error?.toString() ?? 'Registration failed';
       String userFriendlyMsg = rawError;
-      if (rawError.contains('over_email_send_rate_limit') || rawError.contains('rate limit')) {
-        userFriendlyMsg = 'Supabase email send rate limit exceeded. You can proceed with Local Offline Workspace.';
+      if (rawError.contains('user_already_exists') || rawError.contains('User already registered')) {
+        userFriendlyMsg = 'An account with this email already exists. Please Sign In.';
+      } else if (rawError.contains('over_email_send_rate_limit') || rawError.contains('rate limit')) {
+        userFriendlyMsg = 'Too many requests. Please wait a moment and try again.';
       } else if (rawError.contains('email_address_invalid')) {
-        userFriendlyMsg = 'Supabase rejected email domain. You can proceed with Local Offline Workspace.';
+        userFriendlyMsg = 'Please enter a valid email address.';
       }
       setState(() => _errorMessage = userFriendlyMsg);
       ScaffoldMessenger.of(context).hideCurrentSnackBar();
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text(userFriendlyMsg), backgroundColor: ApnaColors.error),
       );
-    }
-  }
-
-  Future<void> _createOfflineWorkspace() async {
-    setState(() => _errorMessage = null);
-    final email = _emailController.text.trim().isNotEmpty ? _emailController.text.trim() : 'family@apna.local';
-    final name = _nameController.text.trim().isNotEmpty ? _nameController.text.trim() : 'Family Member';
-    final success = await ref.read(authControllerProvider.notifier).loginOffline(
-          email: email,
-          fullName: name,
-        );
-    if (!mounted) return;
-    if (success) {
-      context.go('/');
     }
   }
 
@@ -177,33 +165,14 @@ class _RegisterPageState extends ConsumerState<RegisterPage> {
                             borderRadius: BorderRadius.circular(12),
                             border: Border.all(color: ApnaColors.error.withOpacity(0.3)),
                           ),
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
+                          child: Row(
                             children: [
-                              Row(
-                                children: [
-                                  const Icon(Icons.error_outline_rounded, size: 18, color: ApnaColors.error),
-                                  const SizedBox(width: 8),
-                                  Expanded(
-                                    child: Text(
-                                      _errorMessage!,
-                                      style: const TextStyle(color: ApnaColors.error, fontSize: 13, fontWeight: FontWeight.w600),
-                                    ),
-                                  ),
-                                ],
-                              ),
-                              const SizedBox(height: 10),
-                              SizedBox(
-                                width: double.infinity,
-                                height: 36,
-                                child: OutlinedButton.icon(
-                                  icon: const Icon(Icons.folder_shared_outlined, size: 16, color: ApnaColors.primary),
-                                  label: const Text('Proceed with Local Offline Workspace', style: TextStyle(color: ApnaColors.primary, fontSize: 12.5, fontWeight: FontWeight.w600)),
-                                  style: OutlinedButton.styleFrom(
-                                    side: const BorderSide(color: ApnaColors.primary),
-                                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-                                  ),
-                                  onPressed: _createOfflineWorkspace,
+                              const Icon(Icons.error_outline_rounded, size: 18, color: ApnaColors.error),
+                              const SizedBox(width: 8),
+                              Expanded(
+                                child: Text(
+                                  _errorMessage!,
+                                  style: const TextStyle(color: ApnaColors.error, fontSize: 13, fontWeight: FontWeight.w600),
                                 ),
                               ),
                             ],

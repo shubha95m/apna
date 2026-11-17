@@ -6,7 +6,7 @@ plugins {
 
 android {
     namespace = "com.apna.apna"
-    compileSdk = 36 // Topmost Android 16 SDK
+    compileSdk = 37 // Latest Android API 37 compilation
 
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_17

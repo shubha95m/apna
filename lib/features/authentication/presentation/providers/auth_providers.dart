@@ -1,6 +1,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../data/datasources/supabase_auth_datasource.dart';
 import '../../data/repositories/auth_repository_impl.dart';
+import '../../domain/entities/saved_device_account.dart';
 import '../../domain/entities/user_entity.dart';
 import '../../domain/repositories/auth_repository.dart';
 
@@ -16,6 +17,11 @@ final authRepositoryProvider = Provider<AuthRepository>((ref) {
 final authStateStreamProvider = StreamProvider<UserEntity?>((ref) {
   final repository = ref.watch(authRepositoryProvider);
   return repository.authStateChanges;
+});
+
+final savedDeviceAccountProvider = FutureProvider<SavedDeviceAccount?>((ref) async {
+  final repository = ref.watch(authRepositoryProvider);
+  return repository.getSavedDeviceAccount();
 });
 
 class AuthController extends StateNotifier<AsyncValue<UserEntity?>> {
@@ -57,22 +63,29 @@ class AuthController extends StateNotifier<AsyncValue<UserEntity?>> {
     );
   }
 
-  Future<bool> loginOffline({required String email, String? fullName}) async {
+  Future<bool> unlockWithBiometrics() async {
     state = const AsyncValue.loading();
-    final result = await _repository.signInOffline(
-      email: email,
-      fullName: fullName,
-    );
+    final result = await _repository.unlockWithBiometrics();
     return result.fold(
       (user) {
-        state = AsyncValue.data(user);
-        return true;
+        if (user != null) {
+          state = AsyncValue.data(user);
+          return true;
+        } else {
+          state = AsyncValue.data(_repository.currentUser);
+          return false;
+        }
       },
       (failure) {
         state = AsyncValue.error(failure.message, StackTrace.current);
         return false;
       },
     );
+  }
+
+  Future<void> clearSavedDeviceAccount() async {
+    await _repository.clearSavedDeviceAccount();
+    state = const AsyncValue.data(null);
   }
 
   Future<void> logout() async {
@@ -82,11 +95,6 @@ class AuthController extends StateNotifier<AsyncValue<UserEntity?>> {
   }
 
   Future<void> signOut() => logout();
-
-  Future<bool> unlockWithBiometrics() async {
-    final result = await _repository.authenticateWithBiometrics();
-    return result.dataOrNull ?? false;
-  }
 }
 
 final authControllerProvider =
@@ -94,4 +102,3 @@ final authControllerProvider =
   final repository = ref.watch(authRepositoryProvider);
   return AuthController(repository);
 });
-

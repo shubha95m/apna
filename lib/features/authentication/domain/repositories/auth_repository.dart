@@ -1,5 +1,6 @@
 import '../../../../core/errors/failures.dart';
 import '../../../../core/result/result.dart';
+import '../entities/saved_device_account.dart';
 import '../entities/user_entity.dart';
 
 abstract interface class AuthRepository {
@@ -14,10 +15,6 @@ abstract interface class AuthRepository {
     required String password,
     String? fullName,
   });
-  Future<Result<UserEntity, AppFailure>> signInOffline({
-    required String email,
-    String? fullName,
-  });
   Future<Result<void, AppFailure>> sendMagicLinkOtp(String email);
   Future<Result<UserEntity, AppFailure>> verifyMagicLinkOtp({
     required String email,
@@ -25,5 +22,8 @@ abstract interface class AuthRepository {
   });
   Future<Result<void, AppFailure>> signOut();
   Future<Result<bool, AppFailure>> authenticateWithBiometrics();
+  Future<Result<UserEntity?, AppFailure>> unlockWithBiometrics();
+  Future<SavedDeviceAccount?> getSavedDeviceAccount();
+  Future<void> clearSavedDeviceAccount();
 }
 

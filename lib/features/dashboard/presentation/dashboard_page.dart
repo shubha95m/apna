@@ -12,14 +12,30 @@ import '../../bills/domain/entities/bill_entity.dart';
 import '../../bills/presentation/providers/bill_providers.dart';
 import '../../documents/domain/entities/document_entity.dart';
 import '../../documents/presentation/providers/document_providers.dart';
+import '../../permissions/presentation/smart_sync_permission_dialog.dart';
 import '../../tasks/presentation/providers/task_providers.dart';
 import '../../warranties/presentation/providers/warranty_providers.dart';
 
-class DashboardPage extends ConsumerWidget {
+class DashboardPage extends ConsumerStatefulWidget {
   const DashboardPage({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<DashboardPage> createState() => _DashboardPageState();
+}
+
+class _DashboardPageState extends ConsumerState<DashboardPage> {
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) {
+        SmartSyncPermissionDialog.showIfNeeded(context);
+      }
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
     final workspaceName = ref.watch(activeWorkspaceNameProvider);
 
     final documentsAsync = ref.watch(documentListNotifierProvider);

@@ -1,4 +1,3 @@
-import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -11,7 +10,7 @@ void main() {
     SharedPreferences.setMockInitialValues({});
   });
 
-  testWidgets('Real ApnaApp launches and renders LoginPage when unauthenticated', (WidgetTester tester) async {
+  testWidgets('Real ApnaApp launches and renders password LoginPage when no saved device account exists', (WidgetTester tester) async {
     await tester.pumpWidget(
       const ProviderScope(
         child: ApnaApp(),
@@ -22,7 +21,29 @@ void main() {
 
     expect(find.text('Apna Workspace'), findsOneWidget);
     expect(find.text('Sign In to Workspace'), findsOneWidget);
-    expect(find.text('Unlock with Biometrics (Touch / Face ID)'), findsOneWidget);
+  });
+
+  testWidgets('Real ApnaApp displays PhonePe/GPay 1-touch Biometric Unlock when saved device account exists', (WidgetTester tester) async {
+    SharedPreferences.setMockInitialValues({
+      'apna_device_user_id': 'c8755d35-21d6-43e0-9ded-e887fb83629d',
+      'apna_device_user_email': 'shubham.sharma75319@gmail.com',
+      'apna_device_user_name': 'Shubham Sharma',
+      'apna_biometric_enabled': true,
+    });
+
+    await tester.pumpWidget(
+      const ProviderScope(
+        child: ApnaApp(),
+      ),
+    );
+    await tester.pump();
+    await tester.pumpAndSettle();
+
+    expect(find.text('Welcome back,'), findsOneWidget);
+    expect(find.text('Shubham Sharma'), findsOneWidget);
+    expect(find.text('shubham.sharma75319@gmail.com'), findsOneWidget);
+    expect(find.text('Unlock with Touch / Face ID'), findsOneWidget);
+    expect(find.text('Touch fingerprint sensor to unlock'), findsOneWidget);
   });
 
   testWidgets('Auth state transitions from LoginPage to Dashboard on login and back on logout', (WidgetTester tester) async {

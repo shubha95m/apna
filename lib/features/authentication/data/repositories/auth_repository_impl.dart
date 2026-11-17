@@ -1,5 +1,6 @@
 import '../../../../core/errors/failures.dart';
 import '../../../../core/result/result.dart';
+import '../../domain/entities/saved_device_account.dart';
 import '../../domain/entities/user_entity.dart';
 import '../../domain/repositories/auth_repository.dart';
 import '../datasources/supabase_auth_datasource.dart';
@@ -45,19 +46,6 @@ class AuthRepositoryImpl implements AuthRepository {
   }
 
   @override
-  Future<Result<UserEntity, AppFailure>> signInOffline({
-    required String email,
-    String? fullName,
-  }) async {
-    try {
-      final user = await _dataSource.signInOffline(email: email, fullName: fullName);
-      return Success(user);
-    } catch (e) {
-      return Failure(AuthFailure('Offline authentication failed: ${e.toString()}'));
-    }
-  }
-
-  @override
   Future<Result<void, AppFailure>> sendMagicLinkOtp(String email) async {
     try {
       await _dataSource.sendOtp(email);
@@ -99,5 +87,20 @@ class AuthRepositoryImpl implements AuthRepository {
       return Failure(AuthFailure('Biometric authentication failed: ${e.toString()}'));
     }
   }
-}
 
+  @override
+  Future<Result<UserEntity?, AppFailure>> unlockWithBiometrics() async {
+    try {
+      final user = await _dataSource.unlockWithBiometrics();
+      return Success(user);
+    } catch (e) {
+      return Failure(AuthFailure('Biometric unlock failed: ${e.toString()}'));
+    }
+  }
+
+  @override
+  Future<SavedDeviceAccount?> getSavedDeviceAccount() => _dataSource.getSavedDeviceAccount();
+
+  @override
+  Future<void> clearSavedDeviceAccount() => _dataSource.clearSavedDeviceAccount();
+}

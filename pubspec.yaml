@@ -25,6 +25,7 @@ dependencies:
   flutter_dotenv: ^5.2.1
   cupertino_icons: ^1.0.8
   file_picker: ^11.0.3
+  permission_handler: ^13.0.2
 
 dev_dependencies:
   flutter_test:

@@ -18,7 +18,6 @@ void main() {
 
     expect(find.text('Apna Workspace'), findsOneWidget);
     expect(find.text('Sign In to Workspace'), findsOneWidget);
-    expect(find.text('Unlock with Biometrics (Touch / Face ID)'), findsOneWidget);
   });
 
   testWidgets('Apna App displays Dashboard when authenticated', (WidgetTester tester) async {
@@ -98,13 +97,7 @@ class MockAuthController extends StateNotifier<AsyncValue<UserEntity?>>
   }
 
   @override
-  Future<bool> loginOffline({required String email, String? fullName}) async {
-    state = AsyncValue.data(UserEntity(
-      id: 'usr-1',
-      email: email,
-      fullName: fullName ?? 'Shubham Sharma',
-      createdAt: DateTime.now(),
-    ));
-    return true;
+  Future<void> clearSavedDeviceAccount() async {
+    state = const AsyncValue.data(null);
   }
 }
