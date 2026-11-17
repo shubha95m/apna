@@ -12,7 +12,6 @@ import '../../bills/domain/entities/bill_entity.dart';
 import '../../bills/presentation/providers/bill_providers.dart';
 import '../../documents/domain/entities/document_entity.dart';
 import '../../documents/presentation/providers/document_providers.dart';
-import '../../permissions/presentation/smart_sync_permission_dialog.dart';
 import '../../tasks/presentation/providers/task_providers.dart';
 import '../../warranties/presentation/providers/warranty_providers.dart';
 import '../../workspaces/presentation/widgets/manage_family_members_dialog.dart';
@@ -31,19 +30,14 @@ class _DashboardPageState extends ConsumerState<DashboardPage> {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) async {
       if (mounted) {
-        await SmartSyncPermissionDialog.showIfNeeded(context);
-        // Automatically sync last 1 month of bills, expenses, and warranties if opening for the first time
-        final res = await ref.read(smartSyncControllerProvider.notifier).runInitialSyncIfNeeded();
-        if (mounted && res != null) {
-          ref.invalidate(billListNotifierProvider);
-          ref.invalidate(warrantyListNotifierProvider);
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text(res.message),
-              backgroundColor: ApnaColors.success,
-              duration: const Duration(seconds: 4),
-            ),
-          );
+        try {
+          final res = await ref.read(smartSyncControllerProvider.notifier).runInitialSyncIfNeeded();
+          if (mounted && res != null) {
+            ref.invalidate(billListNotifierProvider);
+            ref.invalidate(warrantyListNotifierProvider);
+          }
+        } catch (e) {
+          debugPrint('Initial sync non-fatal notice: $e');
         }
       }
     });

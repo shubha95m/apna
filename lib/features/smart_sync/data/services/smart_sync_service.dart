@@ -76,13 +76,11 @@ class SmartSyncService {
           await client.from('warranties').insert({
             'id': itemId,
             'workspace_id': workspaceId,
-            'owner_id': userId,
             'item_name': parsed.title,
             'brand': parsed.provider,
             'purchase_date': now.subtract(const Duration(days: 15)).toIso8601String().split('T').first,
-            'warranty_period_months': parsed.warrantyMonths ?? 12,
+            'warranty_months': parsed.warrantyMonths ?? 12,
             'expiry_date': parsed.dueDate.toIso8601String().split('T').first,
-            'support_contact': '1800-CUSTOMER-CARE',
             'notes': 'Auto-imported via Smart Sync from order confirmation.',
             'created_at': now.toIso8601String(),
             'updated_at': now.toIso8601String(),
@@ -105,19 +103,23 @@ class SmartSyncService {
           });
           calendarCount++;
         } else {
+          String dbCategory = 'other';
+          if (parsed.category == ParsedCategory.electricity) dbCategory = 'electricity';
+          if (parsed.category == ParsedCategory.telecom) dbCategory = 'mobile';
+          if (parsed.category == ParsedCategory.broadband) dbCategory = 'internet';
+          if (parsed.category == ParsedCategory.gas) dbCategory = 'gas';
+          if (parsed.category == ParsedCategory.water) dbCategory = 'water';
+
           // Insert into bills
           await client.from('bills').insert({
             'id': itemId,
             'workspace_id': workspaceId,
-            'owner_id': userId,
             'title': parsed.title,
-            'provider': parsed.provider,
-            'category': parsed.category.name,
+            'provider_name': parsed.provider,
+            'category': dbCategory,
             'amount': parsed.amount,
             'due_date': parsed.dueDate.toIso8601String().split('T').first,
-            'status': 'PENDING',
-            'auto_pay': false,
-            'notes': 'Auto-imported from recent SMS statement.',
+            'payment_status': 'unpaid',
             'created_at': now.toIso8601String(),
             'updated_at': now.toIso8601String(),
           });
@@ -143,15 +145,14 @@ class SmartSyncService {
           await client.from('expenses').insert({
             'id': _uuid.v4(),
             'workspace_id': workspaceId,
-            'owner_id': userId,
+            'paid_by_id': userId,
             'title': parsed.title,
-            'category': parsed.category.name,
+            'category': dbCategory,
             'amount': parsed.amount,
             'expense_date': now.toIso8601String().split('T').first,
-            'payment_mode': 'UPI',
+            'payment_mode': 'upi',
             'notes': 'Synced via Apna Smart Utility Reader',
             'created_at': now.toIso8601String(),
-            'updated_at': now.toIso8601String(),
           });
           expensesCount++;
         }
