@@ -42,6 +42,8 @@ app.*.map.json
 
 # Property files
 *.properties
+!android/gradle/wrapper/gradle-wrapper.properties
+!android/gradle.properties
 
 # macOS-specific
 .DS_Store
@@ -58,11 +60,8 @@ Icon
 .com.apple.timemachine.donotpresent
 
 # Android-specific
-**/android/**/gradle-wrapper.jar
 **/android/.gradle
 **/android/captures/
-**/android/gradlew
-**/android/gradlew.bat
 **/android/local.properties
 **/android/**/GeneratedPluginRegistrant.java
 
