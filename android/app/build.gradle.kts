@@ -46,12 +46,6 @@ dependencies {
     implementation("androidx.fragment:fragment-ktx:1.8.6")
 }
 
-kotlin {
-    compilerOptions {
-        jvmTarget = org.jetbrains.kotlin.gradle.dsl.JvmTarget.JVM_17
-    }
-}
-
 flutter {
     source = "../.."
 }
