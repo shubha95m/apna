@@ -1,5 +1,4 @@
-import 'dart:io';
-import 'package:flutter/foundation.dart';
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -23,9 +22,11 @@ class _LoginPageState extends ConsumerState<LoginPage> {
   String? _errorMessage;
   bool _usePasswordFallback = false;
   bool _didAutoPromptBiometric = false;
+  Timer? _autoBiometricTimer;
 
   @override
   void dispose() {
+    _autoBiometricTimer?.cancel();
     _emailController.dispose();
     _passwordController.dispose();
     super.dispose();
@@ -34,10 +35,12 @@ class _LoginPageState extends ConsumerState<LoginPage> {
   void _triggerAutoBiometric(SavedDeviceAccount savedAccount) {
     if (_didAutoPromptBiometric) return;
     _didAutoPromptBiometric = true;
-    if (!kIsWeb && Platform.environment.containsKey('FLUTTER_TEST')) {
+    if (WidgetsBinding.instance.runtimeType.toString().contains('Test')) {
       return; // In widget tests, do not block test runner with pending native biometric prompts
     }
-    WidgetsBinding.instance.addPostFrameCallback((_) {
+    _autoBiometricTimer?.cancel();
+    // Allow the Android Activity to complete its initial draw and establish window focus
+    _autoBiometricTimer = Timer(const Duration(milliseconds: 600), () {
       if (mounted && !_usePasswordFallback) {
         _handleBiometricUnlock();
       }
@@ -76,19 +79,26 @@ class _LoginPageState extends ConsumerState<LoginPage> {
   }
 
   Future<void> _handleBiometricUnlock() async {
-    setState(() => _errorMessage = null);
-    final savedAccount = ref.read(savedDeviceAccountProvider).valueOrNull;
-    final success = await ref.read(authControllerProvider.notifier).unlockWithBiometrics();
     if (!mounted) return;
-    if (success) {
-      context.go('/');
-    } else if (savedAccount == null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Please sign in with email and password once to link your fingerprint to this device.'),
-          backgroundColor: ApnaColors.primary,
-        ),
-      );
+    try {
+      setState(() => _errorMessage = null);
+      final savedAccount = ref.read(savedDeviceAccountProvider).valueOrNull;
+      final success = await ref.read(authControllerProvider.notifier).unlockWithBiometrics();
+      if (!mounted) return;
+      if (success) {
+        context.go('/');
+      } else if (savedAccount == null) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Please sign in with email and password once to link your fingerprint to this device.'),
+            backgroundColor: ApnaColors.primary,
+          ),
+        );
+      }
+    } catch (_) {
+      if (mounted) {
+        setState(() => _usePasswordFallback = true);
+      }
     }
   }
 

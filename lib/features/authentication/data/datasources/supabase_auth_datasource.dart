@@ -253,16 +253,24 @@ class SupabaseAuthDataSourceImpl implements SupabaseAuthDataSource {
 
   @override
   Future<bool> authenticateBiometrics() async {
-    final canCheck = await _localAuth.canCheckBiometrics;
-    final isSupported = await _localAuth.isDeviceSupported();
-    if (!canCheck && !isSupported) return true; // Graceful fallback if device has no biometric sensor
+    try {
+      final isSupported = await _localAuth.isDeviceSupported();
+      if (!isSupported) return true; // Graceful fallback if device has no biometric sensor
 
-    return await _localAuth.authenticate(
-      localizedReason: 'Touch fingerprint sensor to unlock your Apna Workspace',
-      options: const AuthenticationOptions(
-        biometricOnly: false, // Allows device PIN/pattern fallback on Android if finger fails
-        stickyAuth: true,
-      ),
-    );
+      final canCheck = await _localAuth.canCheckBiometrics;
+      if (!canCheck) return true;
+
+      return await _localAuth.authenticate(
+        localizedReason: 'Touch fingerprint sensor to unlock your Apna Workspace',
+        options: const AuthenticationOptions(
+          biometricOnly: false, // Allows device PIN/pattern fallback on Android if finger fails
+          stickyAuth: true,
+          useErrorDialogs: true,
+        ),
+      );
+    } catch (e) {
+      // Never crash the process if native BiometricPrompt throws or user cancels
+      return false;
+    }
   }
 }

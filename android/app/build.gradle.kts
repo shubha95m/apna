@@ -6,7 +6,7 @@ plugins {
 
 android {
     namespace = "com.apna.apna"
-    compileSdk = 37 // Latest Android API 37 compilation
+    compileSdk = 37 // Required by permission_handler_android 14.1.1 and AGP 9.3
 
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_17
@@ -15,7 +15,7 @@ android {
 
     defaultConfig {
         applicationId = "com.apna.apna"
-        minSdk = 24 // Supports Android 7.0 through Android 16 (last 10 Android versions!)
+        minSdk = 24 // Supports Android 7.0 through Android 15
         targetSdk = 35 // Topmost stable Android 15 target API
         versionCode = flutter.versionCode
         versionName = flutter.versionName
@@ -37,6 +37,8 @@ android {
     buildTypes {
         release {
             signingConfig = signingConfigs.getByName("release")
+            isMinifyEnabled = false
+            isShrinkResources = false
         }
     }
 

@@ -51,7 +51,10 @@ class _RegisterPageState extends ConsumerState<RegisterPage> {
     } else {
       final rawError = ref.read(authControllerProvider).error?.toString() ?? 'Registration failed';
       String userFriendlyMsg = rawError;
-      if (rawError.contains('user_already_exists') || rawError.contains('User already registered')) {
+      if (rawError.contains('user_already_exists') ||
+          rawError.contains('User already registered') ||
+          rawError.contains('Database error saving new user') ||
+          rawError.contains('unexpected_failure')) {
         userFriendlyMsg = 'An account with this email already exists. Please Sign In.';
       } else if (rawError.contains('over_email_send_rate_limit') || rawError.contains('rate limit')) {
         userFriendlyMsg = 'Too many requests. Please wait a moment and try again.';
