@@ -16,6 +16,7 @@ import '../../permissions/presentation/smart_sync_permission_dialog.dart';
 import '../../tasks/presentation/providers/task_providers.dart';
 import '../../warranties/presentation/providers/warranty_providers.dart';
 import '../../workspaces/presentation/widgets/manage_family_members_dialog.dart';
+import '../../smart_sync/presentation/providers/smart_sync_providers.dart';
 
 class DashboardPage extends ConsumerStatefulWidget {
   const DashboardPage({super.key});
@@ -28,9 +29,22 @@ class _DashboardPageState extends ConsumerState<DashboardPage> {
   @override
   void initState() {
     super.initState();
-    WidgetsBinding.instance.addPostFrameCallback((_) {
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
       if (mounted) {
-        SmartSyncPermissionDialog.showIfNeeded(context);
+        await SmartSyncPermissionDialog.showIfNeeded(context);
+        // Automatically sync last 1 month of bills, expenses, and warranties if opening for the first time
+        final res = await ref.read(smartSyncControllerProvider.notifier).runInitialSyncIfNeeded();
+        if (mounted && res != null) {
+          ref.invalidate(billListNotifierProvider);
+          ref.invalidate(warrantyListNotifierProvider);
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(res.message),
+              backgroundColor: ApnaColors.success,
+              duration: const Duration(seconds: 4),
+            ),
+          );
+        }
       }
     });
   }
@@ -149,6 +163,10 @@ class _DashboardPageState extends ConsumerState<DashboardPage> {
             ),
             const SizedBox(height: 24),
 
+            // Smart Sync Banner
+            _buildSmartSyncBanner(context, ref),
+            const SizedBox(height: 20),
+
             // Quick Actions
             _buildSectionHeader('Quick Actions'),
             const SizedBox(height: 12),
@@ -172,6 +190,30 @@ class _DashboardPageState extends ConsumerState<DashboardPage> {
                     icon: Icons.payment_rounded,
                     label: 'Pay Bills',
                     onTap: () => context.go('/bills'),
+                  ),
+                  const SizedBox(width: 14),
+                  QuickActionItem(
+                    icon: Icons.note_alt_outlined,
+                    label: 'New Note',
+                    onTap: () => context.go('/notes'),
+                  ),
+                  const SizedBox(width: 14),
+                  QuickActionItem(
+                    icon: Icons.shopping_basket_outlined,
+                    label: 'Grocery List',
+                    onTap: () => context.go('/grocery'),
+                  ),
+                  const SizedBox(width: 14),
+                  QuickActionItem(
+                    icon: Icons.calendar_month_rounded,
+                    label: 'Calendar',
+                    onTap: () => context.go('/calendar'),
+                  ),
+                  const SizedBox(width: 14),
+                  QuickActionItem(
+                    icon: Icons.medical_services_outlined,
+                    label: 'Health Vault',
+                    onTap: () => context.go('/health'),
                   ),
                   const SizedBox(width: 14),
                   QuickActionItem(
@@ -699,6 +741,133 @@ class _DashboardPageState extends ConsumerState<DashboardPage> {
     );
   }
 
+  Widget _buildSmartSyncBanner(BuildContext context, WidgetRef ref) {
+    final syncState = ref.watch(smartSyncControllerProvider);
+    final isLoading = syncState.isLoading;
+
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: ApnaColors.surface,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: ApnaColors.primary.withValues(alpha: 0.2)),
+        boxShadow: [
+          BoxShadow(
+            color: ApnaColors.primary.withValues(alpha: 0.04),
+            blurRadius: 10,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Container(
+            padding: const EdgeInsets.all(10),
+            decoration: BoxDecoration(
+              color: ApnaColors.primary.withValues(alpha: 0.1),
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: const Icon(
+              Icons.auto_awesome_rounded,
+              color: ApnaColors.primary,
+              size: 24,
+            ),
+          ),
+          const SizedBox(width: 14),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    const Text(
+                      'Smart Auto-Sync',
+                      style: TextStyle(fontWeight: FontWeight.bold, fontSize: 15),
+                    ),
+                    const SizedBox(width: 8),
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                      decoration: BoxDecoration(
+                        color: ApnaColors.success.withValues(alpha: 0.15),
+                        borderRadius: BorderRadius.circular(6),
+                      ),
+                      child: const Text(
+                        '1-Month Auto Fill',
+                        style: TextStyle(
+                          fontSize: 10,
+                          fontWeight: FontWeight.w600,
+                          color: ApnaColors.success,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 4),
+                const Text(
+                  'Auto-detects bills, telecom invoices & appliance warranties from SMS & emails. No manual upload required.',
+                  style: TextStyle(fontSize: 12, color: ApnaColors.textSecondary),
+                ),
+                const SizedBox(height: 10),
+                Wrap(
+                  spacing: 8,
+                  runSpacing: 6,
+                  children: [
+                    ElevatedButton.icon(
+                      onPressed: isLoading
+                          ? null
+                          : () async {
+                              final res = await ref
+                                  .read(smartSyncControllerProvider.notifier)
+                                  .runManualSync();
+                              if (context.mounted && res != null) {
+                                ref.invalidate(billListNotifierProvider);
+                                ref.invalidate(warrantyListNotifierProvider);
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  SnackBar(
+                                    content: Text(res.message),
+                                    backgroundColor: ApnaColors.success,
+                                  ),
+                                );
+                              }
+                            },
+                      icon: isLoading
+                          ? const SizedBox(
+                              width: 14,
+                              height: 14,
+                              child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
+                            )
+                          : const Icon(Icons.sync_rounded, size: 16),
+                      label: Text(isLoading ? 'Syncing...' : 'Sync Recent Bills & Messages'),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: ApnaColors.primary,
+                        foregroundColor: Colors.white,
+                        textStyle: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600),
+                        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                      ),
+                    ),
+                    OutlinedButton.icon(
+                      onPressed: () => context.go('/calendar'),
+                      icon: const Icon(Icons.event_note_rounded, size: 16),
+                      label: const Text('View Calendar Timeline'),
+                      style: OutlinedButton.styleFrom(
+                        foregroundColor: ApnaColors.primary,
+                        textStyle: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600),
+                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
   Widget _buildEcosystemPillars(BuildContext context) {
     return LayoutBuilder(
       builder: (context, constraints) {
@@ -712,9 +881,13 @@ class _DashboardPageState extends ConsumerState<DashboardPage> {
           childAspectRatio: isWide ? 2.2 : 1.6,
           children: [
             _buildPillarCard(context, 'Documents Vault', 'KYC, Property, Insurance', Icons.folder_shared_outlined, '/documents'),
-            _buildPillarCard(context, 'Tasks & Chores', 'Family reminders & chores', Icons.task_alt_rounded, '/tasks'),
-            _buildPillarCard(context, 'Bills & UPI', 'One-click NPCI intent pay', Icons.payment_rounded, '/bills'),
+            _buildPillarCard(context, 'Bills & UPI', 'One-click NPCI intent pay', Icons.receipt_long_rounded, '/bills'),
+            _buildPillarCard(context, 'Calendar & Due Dates', 'Bills, warranties & events', Icons.calendar_today_rounded, '/calendar'),
+            _buildPillarCard(context, 'Notes & Docs', 'Checklists, ideas & docs', Icons.note_alt_outlined, '/notes'),
+            _buildPillarCard(context, 'Grocery & Pantry', 'Indian household pantry', Icons.shopping_cart_outlined, '/grocery'),
+            _buildPillarCard(context, 'Health & Medical', 'Prescriptions & lab reports', Icons.favorite_border_rounded, '/health'),
             _buildPillarCard(context, 'Warranties', 'Claim & invoice vault', Icons.verified_user_outlined, '/warranty'),
+            _buildPillarCard(context, 'Tasks & Chores', 'Family reminders & duties', Icons.task_alt_rounded, '/tasks'),
           ],
         );
       },
