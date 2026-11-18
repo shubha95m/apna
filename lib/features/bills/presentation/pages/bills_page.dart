@@ -5,6 +5,7 @@ import 'package:uuid/uuid.dart';
 import '../../../../app/theme/app_colors.dart';
 import '../../../../app/theme/app_typography.dart';
 import '../../../../core/integrations/upi_launcher.dart';
+import '../../../../core/integrations/upi_directory.dart';
 import 'package:apna/features/documents/presentation/providers/document_providers.dart';
 import '../../domain/entities/bill_entity.dart';
 import '../providers/bill_providers.dart';
@@ -196,7 +197,69 @@ class _BillsPageState extends ConsumerState<BillsPage> {
   }
 
   Future<void> _payWithUpi(BillEntity bill) async {
-    final vpa = bill.upiVpa ?? 'merchant@upi';
+    String? vpa = bill.upiVpa;
+    if (vpa == null || vpa.isEmpty || vpa == 'merchant@upi') {
+      vpa = UpiDirectory.resolveVpa(bill.providerName, bill.title);
+    }
+
+    if (vpa == null || vpa.isEmpty) {
+      _showEnterVpaDialog(bill);
+      return;
+    }
+
+    await _launchUpiRequest(bill, vpa);
+  }
+
+  void _showEnterVpaDialog(BillEntity bill) {
+    final vpaController = TextEditingController();
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: Text('Pay ${bill.providerName} via UPI'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text(
+              'Enter the provider\'s verified UPI ID to initiate payment:',
+              style: TextStyle(fontSize: 13, color: ApnaColors.textSecondary),
+            ),
+            const SizedBox(height: 12),
+            TextField(
+              controller: vpaController,
+              decoration: InputDecoration(
+                labelText: 'UPI ID / VPA *',
+                hintText: 'e.g. provider@bank',
+                border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+              ),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text('Cancel'),
+          ),
+          FilledButton(
+            onPressed: () {
+              final entered = vpaController.text.trim();
+              if (entered.isEmpty || !entered.contains('@')) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(content: Text('Please enter a valid UPI ID (e.g. name@bank)')),
+                );
+                return;
+              }
+              Navigator.pop(ctx);
+              _launchUpiRequest(bill, entered);
+            },
+            child: const Text('Proceed to Pay'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Future<void> _launchUpiRequest(BillEntity bill, String vpa) async {
     final request = UpiPaymentRequest(
       payeeVpa: vpa,
       payeeName: bill.providerName,
@@ -211,7 +274,7 @@ class _BillsPageState extends ConsumerState<BillsPage> {
     if (!launched) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('UPI URI: ${request.toUri()}\nOpen UPI app (GPay/PhonePe/Paytm) to complete payment.'),
+          content: Text('UPI Intent: ${request.toUri()}\nOpen UPI app (GPay/PhonePe/Paytm) to complete payment.'),
           backgroundColor: ApnaColors.primary,
           duration: const Duration(seconds: 5),
         ),
@@ -488,106 +551,148 @@ class _BillsPageState extends ConsumerState<BillsPage> {
         categoryIcon = Icons.receipt_rounded;
     }
 
+    final effectiveVpa = (bill.upiVpa != null && bill.upiVpa!.isNotEmpty && bill.upiVpa != 'merchant@upi')
+        ? bill.upiVpa!
+        : (UpiDirectory.resolveVpa(bill.providerName, bill.title) ?? '');
+
     return Card(
-      margin: const EdgeInsets.only(bottom: 14.0),
+      margin: const EdgeInsets.only(bottom: 12.0),
       elevation: 0,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(16),
         side: const BorderSide(color: ApnaColors.border),
       ),
       child: Padding(
-        padding: const EdgeInsets.all(18.0),
-        child: Row(
+        padding: const EdgeInsets.all(16.0),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Icon
-            Container(
-              width: 50,
-              height: 50,
-              decoration: BoxDecoration(
-                color: ApnaColors.surfaceSubtle,
-                borderRadius: BorderRadius.circular(14),
-              ),
-              child: Center(
-                child: Icon(categoryIcon, color: ApnaColors.primary, size: 24),
-              ),
-            ),
-            const SizedBox(width: 16),
-
-            // Details
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
-                    children: [
-                      Text(bill.title, style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 16)),
-                      const SizedBox(width: 8),
-                      Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-                        decoration: BoxDecoration(
-                          color: bill.isPaid
-                              ? ApnaColors.accentDark.withOpacity(0.12)
-                              : (bill.isOverdue ? ApnaColors.error.withOpacity(0.12) : ApnaColors.warning.withOpacity(0.12)),
-                          borderRadius: BorderRadius.circular(6),
-                        ),
-                        child: Text(
-                          bill.isPaid ? 'PAID' : (bill.isOverdue ? 'OVERDUE' : 'DUE SOON'),
-                          style: TextStyle(
-                            fontSize: 10,
-                            fontWeight: FontWeight.bold,
-                            color: bill.isPaid
-                                ? ApnaColors.accentDark
-                                : (bill.isOverdue ? ApnaColors.error : ApnaColors.warning),
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 4),
-                  Text(
-                    '${bill.providerName}${bill.consumerNumber != null ? ' • CA: ${bill.consumerNumber}' : ''}',
-                    style: const TextStyle(fontSize: 13, color: ApnaColors.textSecondary),
-                  ),
-                  const SizedBox(height: 4),
-                  Row(
-                    children: [
-                      Icon(Icons.calendar_month_outlined, size: 14, color: bill.isOverdue ? ApnaColors.error : ApnaColors.textSecondary),
-                      const SizedBox(width: 4),
-                      Text(
-                        'Due: ${DateFormat('dd MMM yyyy').format(bill.dueDate)}',
-                        style: TextStyle(
-                          fontSize: 12,
-                          color: bill.isOverdue ? ApnaColors.error : ApnaColors.textSecondary,
-                          fontWeight: bill.isOverdue ? FontWeight.bold : FontWeight.normal,
-                        ),
-                      ),
-                      if (bill.upiVpa != null) ...[
-                        const SizedBox(width: 12),
-                        const Icon(Icons.payment_rounded, size: 14, color: ApnaColors.textSecondary),
-                        const SizedBox(width: 4),
-                        Text(bill.upiVpa!, style: const TextStyle(fontSize: 12, color: ApnaColors.textSecondary)),
-                      ],
-                    ],
-                  ),
-                ],
-              ),
-            ),
-
-            // Amount & Actions
-            Column(
-              crossAxisAlignment: CrossAxisAlignment.end,
+            // Top Row: Category Icon + Title + Amount + Status
+            Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(
-                  '₹${bill.amount.toStringAsFixed(2)}',
-                  style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 18, color: ApnaColors.textPrimary),
+                Container(
+                  width: 44,
+                  height: 44,
+                  decoration: BoxDecoration(
+                    color: ApnaColors.surfaceSubtle,
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: Center(
+                    child: Icon(categoryIcon, color: ApnaColors.primary, size: 22),
+                  ),
                 ),
-                const SizedBox(height: 8),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        bill.title,
+                        style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 15),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                      const SizedBox(height: 3),
+                      Text(
+                        '${bill.providerName}${bill.consumerNumber != null ? ' • CA: ${bill.consumerNumber}' : ''}',
+                        style: const TextStyle(fontSize: 12, color: ApnaColors.textSecondary),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(width: 8),
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.end,
+                  children: [
+                    Text(
+                      '₹${bill.amount.toStringAsFixed(2)}',
+                      style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: ApnaColors.textPrimary),
+                    ),
+                    const SizedBox(height: 3),
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                      decoration: BoxDecoration(
+                        color: bill.isPaid
+                            ? ApnaColors.accentDark.withOpacity(0.12)
+                            : (bill.isOverdue ? ApnaColors.error.withOpacity(0.12) : ApnaColors.warning.withOpacity(0.12)),
+                        borderRadius: BorderRadius.circular(6),
+                      ),
+                      child: Text(
+                        bill.isPaid ? 'PAID' : (bill.isOverdue ? 'OVERDUE' : 'DUE SOON'),
+                        style: TextStyle(
+                          fontSize: 10,
+                          fontWeight: FontWeight.bold,
+                          color: bill.isPaid
+                              ? ApnaColors.accentDark
+                              : (bill.isOverdue ? ApnaColors.error : ApnaColors.warning),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+            const SizedBox(height: 10),
+
+            // Meta row: Due date & Verified VPA Chip
+            Wrap(
+              spacing: 10,
+              runSpacing: 4,
+              crossAxisAlignment: WrapCrossAlignment.center,
+              children: [
+                Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(
+                      Icons.calendar_month_outlined,
+                      size: 13,
+                      color: bill.isOverdue ? ApnaColors.error : ApnaColors.textSecondary,
+                    ),
+                    const SizedBox(width: 4),
+                    Text(
+                      'Due: ${DateFormat('dd MMM yyyy').format(bill.dueDate)}',
+                      style: TextStyle(
+                        fontSize: 11,
+                        color: bill.isOverdue ? ApnaColors.error : ApnaColors.textSecondary,
+                        fontWeight: bill.isOverdue ? FontWeight.bold : FontWeight.normal,
+                      ),
+                    ),
+                  ],
+                ),
+                if (effectiveVpa.isNotEmpty)
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                    decoration: BoxDecoration(
+                      color: ApnaColors.surfaceSubtle,
+                      borderRadius: BorderRadius.circular(6),
+                      border: Border.all(color: ApnaColors.border),
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        const Icon(Icons.verified_rounded, size: 12, color: ApnaColors.accentDark),
+                        const SizedBox(width: 4),
+                        Text(effectiveVpa, style: const TextStyle(fontSize: 11, color: ApnaColors.textSecondary)),
+                      ],
+                    ),
+                  ),
+              ],
+            ),
+            const Divider(height: 18),
+
+            // Bottom Action Strip
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
                 if (!bill.isPaid)
                   Row(
                     children: [
                       OutlinedButton(
                         style: OutlinedButton.styleFrom(
-                          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
                           minimumSize: Size.zero,
                           tapTargetSize: MaterialTapTargetSize.shrinkWrap,
                           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
@@ -599,14 +704,14 @@ class _BillsPageState extends ConsumerState<BillsPage> {
                       FilledButton.icon(
                         style: FilledButton.styleFrom(
                           backgroundColor: ApnaColors.accentDark,
-                          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                           minimumSize: Size.zero,
                           tapTargetSize: MaterialTapTargetSize.shrinkWrap,
                           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
                         ),
                         onPressed: () => _payWithUpi(bill),
-                        icon: const Icon(Icons.bolt_rounded, size: 16),
-                        label: const Text('Pay with UPI', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
+                        icon: const Icon(Icons.bolt_rounded, size: 15),
+                        label: const Text('Pay UPI', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
                       ),
                     ],
                   )
@@ -614,13 +719,18 @@ class _BillsPageState extends ConsumerState<BillsPage> {
                   Row(
                     children: [
                       const Icon(Icons.check_circle_rounded, size: 16, color: ApnaColors.accentDark),
-                      const SizedBox(width: 4),
+                      const SizedBox(width: 6),
                       Text(
-                        'Paid ${bill.paidAt != null ? DateFormat('dd MMM').format(bill.paidAt!) : ''}',
+                        'Paid on ${bill.paidAt != null ? DateFormat('dd MMM').format(bill.paidAt!) : 'Record'}',
                         style: const TextStyle(color: ApnaColors.accentDark, fontSize: 12, fontWeight: FontWeight.w600),
                       ),
                     ],
                   ),
+                IconButton(
+                  icon: const Icon(Icons.delete_outline_rounded, size: 18, color: ApnaColors.textSecondary),
+                  onPressed: () => ref.read(billListNotifierProvider.notifier).deleteBill(bill.id),
+                  visualDensity: VisualDensity.compact,
+                ),
               ],
             ),
           ],

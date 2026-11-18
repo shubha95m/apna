@@ -28,7 +28,7 @@ class StatBadgeCard extends StatelessWidget {
       onTap: onTap,
       borderRadius: BorderRadius.circular(16),
       child: Container(
-        padding: const EdgeInsets.all(16),
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
         decoration: BoxDecoration(
           color: ApnaColors.surface,
           borderRadius: BorderRadius.circular(16),
@@ -48,29 +48,57 @@ class StatBadgeCard extends StatelessWidget {
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                Text(count, style: ApnaTypography.headingMedium.copyWith(color: ApnaColors.primary)),
+                Expanded(
+                  child: Text(
+                    count,
+                    style: ApnaTypography.headingMedium.copyWith(
+                      color: ApnaColors.primary,
+                      fontSize: 20,
+                    ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ),
                 Container(
-                  padding: const EdgeInsets.all(8),
+                  padding: const EdgeInsets.all(7),
                   decoration: BoxDecoration(
                     color: backgroundColor,
-                    borderRadius: BorderRadius.circular(10),
+                    borderRadius: BorderRadius.circular(9),
                   ),
-                  child: Icon(icon, color: iconColor, size: 20),
+                  child: Icon(icon, color: iconColor, size: 18),
                 ),
               ],
             ),
-            const SizedBox(height: 12),
-            Text(label, style: ApnaTypography.labelMedium.copyWith(color: ApnaColors.textPrimary)),
-            if (subtext != null) ...[
-              const SizedBox(height: 2),
-              Text(
-                subtext!,
-                style: ApnaTypography.bodySmall.copyWith(
-                  color: ApnaColors.accentDark,
-                  fontWeight: FontWeight.w600,
+            const SizedBox(height: 6),
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(
+                  label,
+                  style: ApnaTypography.labelMedium.copyWith(
+                    color: ApnaColors.textPrimary,
+                    fontSize: 12,
+                    fontWeight: FontWeight.w600,
+                  ),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
                 ),
-              ),
-            ],
+                if (subtext != null) ...[
+                  const SizedBox(height: 2),
+                  Text(
+                    subtext!,
+                    style: ApnaTypography.bodySmall.copyWith(
+                      color: ApnaColors.accentDark,
+                      fontWeight: FontWeight.w600,
+                      fontSize: 11,
+                    ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ],
+              ],
+            ),
           ],
         ),
       ),
