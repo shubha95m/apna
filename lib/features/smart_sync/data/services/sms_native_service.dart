@@ -94,9 +94,24 @@ class SmsNativeService {
             ),
           ],
         ),
-        content: const Text(
-          'Apna reads bank and utility SMS messages locally on your device to automatically detect due dates, bills, and expenses.\n\nPlease enable the SMS permission in Settings to sync automatically.',
-          style: TextStyle(fontSize: 14, height: 1.4),
+        content: const Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              'Because this APK was downloaded directly (outside the Google Play Store), Android 13/14/15 places SMS under "Restricted Settings".',
+              style: TextStyle(fontSize: 13, height: 1.4, color: ApnaColors.textSecondary),
+            ),
+            SizedBox(height: 10),
+            Text(
+              'Quick 10-Second Unlock:\n'
+              '1. Tap "Open Settings" below.\n'
+              '2. Tap the 3 dots (⋮) in the top-right corner.\n'
+              '3. Select "Allow restricted settings" & enter PIN/fingerprint.\n'
+              '4. Tap Permissions ➔ SMS ➔ Allow.',
+              style: TextStyle(fontSize: 13, height: 1.4, fontWeight: FontWeight.w500),
+            ),
+          ],
         ),
         actions: [
           TextButton(
