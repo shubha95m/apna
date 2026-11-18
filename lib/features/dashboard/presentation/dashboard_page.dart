@@ -17,6 +17,7 @@ import '../../tasks/presentation/providers/task_providers.dart';
 import '../../warranties/presentation/providers/warranty_providers.dart';
 import '../../workspaces/presentation/widgets/manage_family_members_dialog.dart';
 import '../../smart_sync/presentation/providers/smart_sync_providers.dart';
+import '../../smart_sync/data/services/sms_native_service.dart';
 
 class DashboardPage extends ConsumerStatefulWidget {
   const DashboardPage({super.key});
@@ -876,22 +877,13 @@ class _DashboardPageState extends ConsumerState<DashboardPage> {
             runSpacing: 8,
             children: [
               ElevatedButton.icon(
-                onPressed: () => _showPasteStatementDialog(context, ref),
-                icon: const Icon(Icons.paste_rounded, size: 15),
-                label: const Text('Paste / Import Statement'),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: ApnaColors.primary,
-                  foregroundColor: Colors.white,
-                  textStyle: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600),
-                  padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(9)),
-                ),
-              ),
-              OutlinedButton.icon(
                 onPressed: isLoading
                     ? null
                     : () async {
-                        final res = await ref.read(smartSyncControllerProvider.notifier).runGmailSync();
+                        final hasPerm = await SmsNativeService.ensureSmsPermissionOrPrompt(context);
+                        if (!hasPerm) return;
+
+                        final res = await ref.read(smartSyncControllerProvider.notifier).runDeviceSmsSync();
                         if (context.mounted && res != null) {
                           ref.invalidate(billListNotifierProvider);
                           ref.invalidate(warrantyListNotifierProvider);
@@ -907,10 +899,22 @@ class _DashboardPageState extends ConsumerState<DashboardPage> {
                     ? const SizedBox(
                         width: 14,
                         height: 14,
-                        child: CircularProgressIndicator(strokeWidth: 2, color: ApnaColors.primary),
+                        child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
                       )
-                    : const Icon(Icons.mail_outline_rounded, size: 15),
-                label: Text(isLoading ? 'Syncing...' : 'Sync Gmail / Bills'),
+                    : const Icon(Icons.sync_rounded, size: 15),
+                label: Text(isLoading ? 'Syncing...' : 'Sync Device SMS'),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: ApnaColors.primary,
+                  foregroundColor: Colors.white,
+                  textStyle: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600),
+                  padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(9)),
+                ),
+              ),
+              OutlinedButton.icon(
+                onPressed: () => _showPasteStatementDialog(context, ref),
+                icon: const Icon(Icons.paste_rounded, size: 15),
+                label: const Text('Paste Statement'),
                 style: OutlinedButton.styleFrom(
                   foregroundColor: ApnaColors.primary,
                   textStyle: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600),

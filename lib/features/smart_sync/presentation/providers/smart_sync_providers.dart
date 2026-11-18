@@ -41,46 +41,29 @@ class SmartSyncController extends StateNotifier<AsyncValue<SmartSyncResult?>> {
 
     state = const AsyncValue.loading();
     try {
-      if (!SmsNativeService.isSupportedPlatform) {
-        const safeRes = SmartSyncResult(
-          billsImported: 0,
-          expensesImported: 0,
-          warrantiesImported: 0,
-          calendarEventsImported: 0,
-          duplicatesSkipped: 0,
-          message: 'Please use "Paste Statement" or "Sync Gmail" to import bills cleanly.',
-        );
-        state = const AsyncValue.data(safeRes);
-        return safeRes;
+      if (SmsNativeService.isSupportedPlatform) {
+        final hasPerm = await SmsNativeService.hasPermission();
+        if (!hasPerm) {
+          final granted = await SmsNativeService.requestPermission();
+          if (!granted) {
+            const deniedRes = SmartSyncResult(
+              billsImported: 0,
+              expensesImported: 0,
+              warrantiesImported: 0,
+              calendarEventsImported: 0,
+              duplicatesSkipped: 0,
+              message: 'SMS permission is required to read bank and utility messages.',
+            );
+            state = const AsyncValue.data(deniedRes);
+            return deniedRes;
+          }
+        }
       }
 
       final res = await SmartSyncService.syncLastMonth(
         workspaceId: workspace.id,
         userId: user.id,
         fetchFromDeviceSms: true,
-        fetchFromGmail: false,
-      );
-      state = AsyncValue.data(res);
-      return res;
-    } catch (e, st) {
-      state = AsyncValue.error(e, st);
-      return null;
-    }
-  }
-
-  /// Syncs emails from Gmail
-  Future<SmartSyncResult?> runGmailSync() async {
-    final user = _ref.read(authControllerProvider).valueOrNull;
-    final workspace = _ref.read(activeWorkspaceProvider);
-    if (user == null || workspace == null) return null;
-
-    state = const AsyncValue.loading();
-    try {
-      final res = await SmartSyncService.syncLastMonth(
-        workspaceId: workspace.id,
-        userId: user.id,
-        fetchFromDeviceSms: false,
-        fetchFromGmail: true,
       );
       state = AsyncValue.data(res);
       return res;
