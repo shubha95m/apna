@@ -876,36 +876,14 @@ class _DashboardPageState extends ConsumerState<DashboardPage> {
             runSpacing: 8,
             children: [
               ElevatedButton.icon(
-                onPressed: isLoading
-                    ? null
-                    : () async {
-                        final res = await ref.read(smartSyncControllerProvider.notifier).runDeviceSmsSync();
-                        if (context.mounted && res != null) {
-                          ref.invalidate(billListNotifierProvider);
-                          ref.invalidate(warrantyListNotifierProvider);
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            SnackBar(
-                              content: Text(res.message),
-                              backgroundColor: res.billsImported > 0 || res.expensesImported > 0
-                                  ? ApnaColors.success
-                                  : ApnaColors.primary,
-                            ),
-                          );
-                        }
-                      },
-                icon: isLoading
-                    ? const SizedBox(
-                        width: 14,
-                        height: 14,
-                        child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
-                      )
-                    : const Icon(Icons.sms_rounded, size: 15),
-                label: Text(isLoading ? 'Syncing...' : 'Sync Device SMS'),
+                onPressed: () => _showPasteStatementDialog(context, ref),
+                icon: const Icon(Icons.paste_rounded, size: 15),
+                label: const Text('Paste / Import Statement'),
                 style: ElevatedButton.styleFrom(
                   backgroundColor: ApnaColors.primary,
                   foregroundColor: Colors.white,
                   textStyle: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600),
-                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                  padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
                   shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(9)),
                 ),
               ),
@@ -925,23 +903,18 @@ class _DashboardPageState extends ConsumerState<DashboardPage> {
                           );
                         }
                       },
-                icon: const Icon(Icons.mail_outline_rounded, size: 15),
-                label: const Text('Sync Gmail / Bills'),
+                icon: isLoading
+                    ? const SizedBox(
+                        width: 14,
+                        height: 14,
+                        child: CircularProgressIndicator(strokeWidth: 2, color: ApnaColors.primary),
+                      )
+                    : const Icon(Icons.mail_outline_rounded, size: 15),
+                label: Text(isLoading ? 'Syncing...' : 'Sync Gmail / Bills'),
                 style: OutlinedButton.styleFrom(
                   foregroundColor: ApnaColors.primary,
                   textStyle: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600),
                   padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(9)),
-                ),
-              ),
-              OutlinedButton.icon(
-                onPressed: () => _showPasteStatementDialog(context, ref),
-                icon: const Icon(Icons.paste_rounded, size: 15),
-                label: const Text('Paste Statement'),
-                style: OutlinedButton.styleFrom(
-                  foregroundColor: ApnaColors.textPrimary,
-                  textStyle: const TextStyle(fontSize: 12, fontWeight: FontWeight.w500),
-                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
                   shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(9)),
                 ),
               ),
