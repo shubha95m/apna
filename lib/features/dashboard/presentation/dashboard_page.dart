@@ -5,6 +5,7 @@ import 'package:intl/intl.dart';
 import 'package:apna/app/theme/app_colors.dart';
 import 'package:apna/app/theme/app_typography.dart';
 import 'package:apna/core/integrations/upi_launcher.dart';
+import 'package:apna/core/integrations/upi_directory.dart';
 import 'package:apna/shared/widgets/quick_action_item.dart';
 import 'package:apna/shared/widgets/stat_badge.dart';
 import '../../authentication/presentation/providers/auth_providers.dart';
@@ -115,7 +116,7 @@ class _DashboardPageState extends ConsumerState<DashboardPage> {
                   mainAxisSpacing: 12,
                   shrinkWrap: true,
                   physics: const NeverScrollableScrollPhysics(),
-                  childAspectRatio: isWide ? 1.6 : 1.25,
+                  childAspectRatio: isWide ? 1.6 : (constraints.maxWidth < 380 ? 1.15 : 1.3),
                   children: [
                     StatBadgeCard(
                       count: '$pendingTasksCount',
@@ -553,6 +554,9 @@ class _DashboardPageState extends ConsumerState<DashboardPage> {
             )
           else
             ...unpaidBills.take(3).map((bill) {
+              final effectiveVpa = (bill.upiVpa != null && bill.upiVpa!.isNotEmpty && bill.upiVpa != 'merchant@upi')
+                  ? bill.upiVpa!
+                  : (UpiDirectory.resolveVpa(bill.providerName, bill.title) ?? '');
               return Column(
                 children: [
                   _buildBillRow(
@@ -560,7 +564,7 @@ class _DashboardPageState extends ConsumerState<DashboardPage> {
                     title: bill.title,
                     subtitle: 'Due ${DateFormat('dd MMM').format(bill.dueDate)} • ₹${bill.amount.toStringAsFixed(0)}',
                     amount: bill.amount,
-                    vpa: bill.upiVpa ?? 'merchant@upi',
+                    vpa: effectiveVpa,
                     isDueSoon: bill.isOverdue || bill.dueDate.difference(DateTime.now()).inDays <= 3,
                   ),
                   const Divider(height: 16),
@@ -617,6 +621,10 @@ class _DashboardPageState extends ConsumerState<DashboardPage> {
         const SizedBox(width: 8),
         FilledButton.tonal(
           onPressed: () async {
+            if (vpa.isEmpty) {
+              context.go('/bills');
+              return;
+            }
             final launched = await UpiLauncher.launchUpiPayment(
               UpiPaymentRequest(
                 payeeVpa: vpa,
@@ -640,7 +648,7 @@ class _DashboardPageState extends ConsumerState<DashboardPage> {
             shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
             visualDensity: VisualDensity.compact,
           ),
-          child: const Text('Pay UPI', style: TextStyle(fontWeight: FontWeight.w600, fontSize: 12)),
+          child: Text(vpa.isNotEmpty ? 'Pay UPI' : 'View Bill', style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 12)),
         ),
       ],
     );
@@ -735,6 +743,65 @@ class _DashboardPageState extends ConsumerState<DashboardPage> {
     );
   }
 
+  void _showPasteStatementDialog(BuildContext context, WidgetRef ref) {
+    final textController = TextEditingController();
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        title: const Text('Import Statement / Message', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18)),
+        content: SizedBox(
+          width: 480,
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Text(
+                'Paste any utility bill SMS, telecom statement, or bank debit/credit notification. Apna will parse amount, date, provider, and VPA automatically with zero duplicates.',
+                style: TextStyle(fontSize: 12, color: ApnaColors.textSecondary),
+              ),
+              const SizedBox(height: 12),
+              TextField(
+                controller: textController,
+                maxLines: 5,
+                decoration: InputDecoration(
+                  hintText: 'e.g. BESCOM bill for CA 558192 is Rs. 2140 due date 25-Nov-2026...\nor HDFC Bank card ending 4102 statement generated Rs 14850...',
+                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                ),
+              ),
+            ],
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text('Cancel'),
+          ),
+          FilledButton.icon(
+            icon: const Icon(Icons.auto_awesome_rounded, size: 16),
+            label: const Text('Analyze & Import'),
+            onPressed: () async {
+              final raw = textController.text.trim();
+              if (raw.isEmpty) return;
+              Navigator.pop(ctx);
+              final res = await ref.read(smartSyncControllerProvider.notifier).runManualSync(customMessages: [raw]);
+              if (context.mounted && res != null) {
+                ref.invalidate(billListNotifierProvider);
+                ref.invalidate(warrantyListNotifierProvider);
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content: Text(res.message),
+                    backgroundColor: ApnaColors.success,
+                  ),
+                );
+              }
+            },
+          ),
+        ],
+      ),
+    );
+  }
+
   Widget _buildSmartSyncBanner(BuildContext context, WidgetRef ref) {
     final syncState = ref.watch(smartSyncControllerProvider);
     final isLoading = syncState.isLoading;
@@ -744,118 +811,141 @@ class _DashboardPageState extends ConsumerState<DashboardPage> {
       decoration: BoxDecoration(
         color: ApnaColors.surface,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: ApnaColors.primary.withValues(alpha: 0.2)),
+        border: Border.all(color: ApnaColors.primary.withValues(alpha: 0.18)),
         boxShadow: [
           BoxShadow(
-            color: ApnaColors.primary.withValues(alpha: 0.04),
+            color: ApnaColors.primary.withValues(alpha: 0.03),
             blurRadius: 10,
             offset: const Offset(0, 4),
           ),
         ],
       ),
-      child: Row(
+      child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Container(
-            padding: const EdgeInsets.all(10),
-            decoration: BoxDecoration(
-              color: ApnaColors.primary.withValues(alpha: 0.1),
-              borderRadius: BorderRadius.circular(12),
-            ),
-            child: const Icon(
-              Icons.auto_awesome_rounded,
-              color: ApnaColors.primary,
-              size: 24,
-            ),
-          ),
-          const SizedBox(width: 14),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
+          Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: ApnaColors.primary.withValues(alpha: 0.1),
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                child: const Icon(
+                  Icons.auto_awesome_rounded,
+                  color: ApnaColors.primary,
+                  size: 20,
+                ),
+              ),
+              const SizedBox(width: 10),
+              const Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const Text(
-                      'Smart Auto-Sync',
+                    Text(
+                      'Smart Financial & Bill Sync',
                       style: TextStyle(fontWeight: FontWeight.bold, fontSize: 15),
                     ),
-                    const SizedBox(width: 8),
-                    Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                      decoration: BoxDecoration(
-                        color: ApnaColors.success.withValues(alpha: 0.15),
-                        borderRadius: BorderRadius.circular(6),
-                      ),
-                      child: const Text(
-                        '1-Month Auto Fill',
-                        style: TextStyle(
-                          fontSize: 10,
-                          fontWeight: FontWeight.w600,
-                          color: ApnaColors.success,
-                        ),
-                      ),
+                    Text(
+                      'Multi-account tracking • Real BBPS UPI • Zero Duplicates',
+                      style: TextStyle(fontSize: 11, color: ApnaColors.textSecondary),
                     ),
                   ],
                 ),
-                const SizedBox(height: 4),
-                const Text(
-                  'Auto-detects bills, telecom invoices & appliance warranties from SMS & emails. No manual upload required.',
-                  style: TextStyle(fontSize: 12, color: ApnaColors.textSecondary),
+              ),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
+                decoration: BoxDecoration(
+                  color: ApnaColors.success.withValues(alpha: 0.12),
+                  borderRadius: BorderRadius.circular(6),
                 ),
-                const SizedBox(height: 10),
-                Wrap(
-                  spacing: 8,
-                  runSpacing: 6,
-                  children: [
-                    ElevatedButton.icon(
-                      onPressed: isLoading
-                          ? null
-                          : () async {
-                              final res = await ref
-                                  .read(smartSyncControllerProvider.notifier)
-                                  .runManualSync();
-                              if (context.mounted && res != null) {
-                                ref.invalidate(billListNotifierProvider);
-                                ref.invalidate(warrantyListNotifierProvider);
-                                ScaffoldMessenger.of(context).showSnackBar(
-                                  SnackBar(
-                                    content: Text(res.message),
-                                    backgroundColor: ApnaColors.success,
-                                  ),
-                                );
-                              }
-                            },
-                      icon: isLoading
-                          ? const SizedBox(
-                              width: 14,
-                              height: 14,
-                              child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
-                            )
-                          : const Icon(Icons.sync_rounded, size: 16),
-                      label: Text(isLoading ? 'Syncing...' : 'Sync Recent Bills & Messages'),
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: ApnaColors.primary,
-                        foregroundColor: Colors.white,
-                        textStyle: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600),
-                        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-                      ),
-                    ),
-                    OutlinedButton.icon(
-                      onPressed: () => context.go('/calendar'),
-                      icon: const Icon(Icons.event_note_rounded, size: 16),
-                      label: const Text('View Calendar Timeline'),
-                      style: OutlinedButton.styleFrom(
-                        foregroundColor: ApnaColors.primary,
-                        textStyle: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600),
-                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-                      ),
-                    ),
-                  ],
+                child: const Text(
+                  'Verified Directory',
+                  style: TextStyle(
+                    fontSize: 10,
+                    fontWeight: FontWeight.w600,
+                    color: ApnaColors.success,
+                  ),
                 ),
-              ],
-            ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          Wrap(
+            spacing: 8,
+            runSpacing: 8,
+            children: [
+              ElevatedButton.icon(
+                onPressed: isLoading
+                    ? null
+                    : () async {
+                        final res = await ref.read(smartSyncControllerProvider.notifier).runDeviceSmsSync();
+                        if (context.mounted && res != null) {
+                          ref.invalidate(billListNotifierProvider);
+                          ref.invalidate(warrantyListNotifierProvider);
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(
+                              content: Text(res.message),
+                              backgroundColor: res.billsImported > 0 || res.expensesImported > 0
+                                  ? ApnaColors.success
+                                  : ApnaColors.primary,
+                            ),
+                          );
+                        }
+                      },
+                icon: isLoading
+                    ? const SizedBox(
+                        width: 14,
+                        height: 14,
+                        child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
+                      )
+                    : const Icon(Icons.sms_rounded, size: 15),
+                label: Text(isLoading ? 'Syncing...' : 'Sync Device SMS'),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: ApnaColors.primary,
+                  foregroundColor: Colors.white,
+                  textStyle: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600),
+                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(9)),
+                ),
+              ),
+              OutlinedButton.icon(
+                onPressed: isLoading
+                    ? null
+                    : () async {
+                        final res = await ref.read(smartSyncControllerProvider.notifier).runGmailSync();
+                        if (context.mounted && res != null) {
+                          ref.invalidate(billListNotifierProvider);
+                          ref.invalidate(warrantyListNotifierProvider);
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(
+                              content: Text(res.message),
+                              backgroundColor: ApnaColors.success,
+                            ),
+                          );
+                        }
+                      },
+                icon: const Icon(Icons.mail_outline_rounded, size: 15),
+                label: const Text('Sync Gmail / Bills'),
+                style: OutlinedButton.styleFrom(
+                  foregroundColor: ApnaColors.primary,
+                  textStyle: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600),
+                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(9)),
+                ),
+              ),
+              OutlinedButton.icon(
+                onPressed: () => _showPasteStatementDialog(context, ref),
+                icon: const Icon(Icons.paste_rounded, size: 15),
+                label: const Text('Paste Statement'),
+                style: OutlinedButton.styleFrom(
+                  foregroundColor: ApnaColors.textPrimary,
+                  textStyle: const TextStyle(fontSize: 12, fontWeight: FontWeight.w500),
+                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(9)),
+                ),
+              ),
+            ],
           ),
         ],
       ),

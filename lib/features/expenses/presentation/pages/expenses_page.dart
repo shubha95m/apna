@@ -271,63 +271,84 @@ class _ExpensesPageState extends ConsumerState<ExpensesPage> {
 
                       // Metric Card
                       Container(
-                        padding: const EdgeInsets.all(20),
+                        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
                         decoration: BoxDecoration(
                           color: ApnaColors.surfaceSubtle,
-                          borderRadius: BorderRadius.circular(18),
+                          borderRadius: BorderRadius.circular(16),
                           border: Border.all(color: ApnaColors.border),
                         ),
-                        child: Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceAround,
-                          children: [
-                            Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
+                        child: LayoutBuilder(
+                          builder: (context, constraints) {
+                            final isNarrow = constraints.maxWidth < 420;
+                            return Row(
                               children: [
-                                const Text('Total Recorded Spend', style: ApnaTypography.bodySmall),
-                                const SizedBox(height: 4),
-                                Text(
-                                  '₹${totalSpent.toStringAsFixed(2)}',
-                                  style: const TextStyle(
-                                    fontSize: 26,
-                                    fontWeight: FontWeight.bold,
-                                    color: ApnaColors.primary,
+                                Expanded(
+                                  flex: isNarrow ? 3 : 2,
+                                  child: Column(
+                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    children: [
+                                      const Text('Total Spend', style: ApnaTypography.bodySmall),
+                                      const SizedBox(height: 2),
+                                      FittedBox(
+                                        fit: BoxFit.scaleDown,
+                                        alignment: Alignment.centerLeft,
+                                        child: Text(
+                                          '₹${totalSpent.toStringAsFixed(2)}',
+                                          style: const TextStyle(
+                                            fontSize: 22,
+                                            fontWeight: FontWeight.bold,
+                                            color: ApnaColors.primary,
+                                          ),
+                                        ),
+                                      ),
+                                    ],
                                   ),
                                 ),
-                              ],
-                            ),
-                            Container(width: 1, height: 44, color: ApnaColors.border),
-                            Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                const Text('Transactions', style: ApnaTypography.bodySmall),
-                                const SizedBox(height: 4),
-                                Text(
-                                  '${expenses.length}',
-                                  style: const TextStyle(
-                                    fontSize: 26,
-                                    fontWeight: FontWeight.bold,
-                                    color: ApnaColors.textPrimary,
+                                Container(width: 1, height: 38, color: ApnaColors.border),
+                                const SizedBox(width: 12),
+                                Expanded(
+                                  flex: 2,
+                                  child: Column(
+                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    children: [
+                                      const Text('Entries', style: ApnaTypography.bodySmall),
+                                      const SizedBox(height: 2),
+                                      Text(
+                                        '${expenses.length}',
+                                        style: const TextStyle(
+                                          fontSize: 20,
+                                          fontWeight: FontWeight.bold,
+                                          color: ApnaColors.textPrimary,
+                                        ),
+                                      ),
+                                    ],
                                   ),
                                 ),
-                              ],
-                            ),
-                            Container(width: 1, height: 44, color: ApnaColors.border),
-                            const Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text('Payment Modes', style: ApnaTypography.bodySmall),
-                                SizedBox(height: 4),
-                                Text(
-                                  'UPI, Card, Cash',
-                                  style: TextStyle(
-                                    fontSize: 16,
-                                    fontWeight: FontWeight.bold,
-                                    color: ApnaColors.accentDark,
+                                if (!isNarrow) ...[
+                                  Container(width: 1, height: 38, color: ApnaColors.border),
+                                  const SizedBox(width: 12),
+                                  const Expanded(
+                                    flex: 2,
+                                    child: Column(
+                                      crossAxisAlignment: CrossAxisAlignment.start,
+                                      children: [
+                                        Text('Multi-Account', style: ApnaTypography.bodySmall),
+                                        SizedBox(height: 2),
+                                        Text(
+                                          'UPI & Cards',
+                                          style: TextStyle(
+                                            fontSize: 14,
+                                            fontWeight: FontWeight.bold,
+                                            color: ApnaColors.accentDark,
+                                          ),
+                                        ),
+                                      ],
+                                    ),
                                   ),
-                                ),
+                                ],
                               ],
-                            ),
-                          ],
+                            );
+                          },
                         ),
                       ),
                       const SizedBox(height: 20),
@@ -437,74 +458,94 @@ class _ExpensesPageState extends ConsumerState<ExpensesPage> {
         side: const BorderSide(color: ApnaColors.border),
       ),
       child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 18.0, vertical: 14.0),
+        padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 12.0),
         child: Row(
           children: [
             // Mode icon
             Container(
-              width: 44,
-              height: 44,
+              width: 42,
+              height: 42,
               decoration: BoxDecoration(
                 color: ApnaColors.surfaceSubtle,
                 borderRadius: BorderRadius.circular(12),
               ),
               child: Center(
-                child: Icon(modeIcon, color: ApnaColors.accentDark, size: 22),
+                child: Icon(modeIcon, color: ApnaColors.accentDark, size: 20),
               ),
             ),
-            const SizedBox(width: 14),
+            const SizedBox(width: 12),
 
-            // Title & Category
+            // Title, Category, Date & Account Badge
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(expense.title, style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 15)),
-                  const SizedBox(height: 2),
-                  Row(
+                  Text(
+                    expense.title,
+                    style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 14),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                  const SizedBox(height: 3),
+                  Wrap(
+                    spacing: 6,
+                    runSpacing: 4,
+                    crossAxisAlignment: WrapCrossAlignment.center,
                     children: [
                       Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                        padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1.5),
                         decoration: BoxDecoration(
                           color: ApnaColors.accentLight.withOpacity(0.15),
                           borderRadius: BorderRadius.circular(4),
                         ),
                         child: Text(
                           expense.category.toUpperCase(),
-                          style: const TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: ApnaColors.accentDark),
+                          style: const TextStyle(fontSize: 9, fontWeight: FontWeight.bold, color: ApnaColors.accentDark),
                         ),
                       ),
-                      const SizedBox(width: 8),
                       Text(
-                        DateFormat('dd MMM yyyy').format(expense.expenseDate),
-                        style: const TextStyle(fontSize: 12, color: ApnaColors.textSecondary),
+                        DateFormat('dd MMM').format(expense.expenseDate),
+                        style: const TextStyle(fontSize: 11, color: ApnaColors.textSecondary),
                       ),
-                      const SizedBox(width: 8),
                       Text(
                         '• ${expense.paymentMode.toUpperCase()}',
-                        style: const TextStyle(fontSize: 12, color: ApnaColors.textSecondary),
+                        style: const TextStyle(fontSize: 11, color: ApnaColors.textSecondary),
                       ),
                     ],
                   ),
                   if (expense.notes != null && expense.notes!.isNotEmpty) ...[
                     const SizedBox(height: 4),
-                    Text(expense.notes!, style: const TextStyle(fontSize: 12, color: ApnaColors.textSecondary)),
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                      decoration: BoxDecoration(
+                        color: ApnaColors.surfaceSubtle,
+                        borderRadius: BorderRadius.circular(4),
+                      ),
+                      child: Text(
+                        expense.notes!,
+                        style: const TextStyle(fontSize: 10, color: ApnaColors.textSecondary),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ),
                   ],
                 ],
               ),
             ),
+            const SizedBox(width: 8),
 
             // Amount & Delete
             Row(
+              mainAxisSize: MainAxisSize.min,
               children: [
                 Text(
                   '₹${expense.amount.toStringAsFixed(2)}',
-                  style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: ApnaColors.textPrimary),
+                  style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15, color: ApnaColors.textPrimary),
                 ),
-                const SizedBox(width: 8),
                 IconButton(
-                  icon: const Icon(Icons.delete_outline, size: 18, color: ApnaColors.textSecondary),
+                  icon: const Icon(Icons.delete_outline_rounded, size: 18, color: ApnaColors.textSecondary),
                   onPressed: () => ref.read(expenseListNotifierProvider.notifier).deleteExpense(expense.id),
+                  visualDensity: VisualDensity.compact,
                 ),
               ],
             ),
