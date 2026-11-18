@@ -1,7 +1,7 @@
 name: apna
 description: Apna - Your Personal & Shared Workspace. One Account, All Devices, Always in Sync.
 publish_to: 'none'
-version: 1.0.7+18
+version: 1.0.8+19
 
 environment:
   sdk: '>=3.3.0 <4.0.0'
@@ -27,7 +27,6 @@ dependencies:
   file_picker: ^11.0.3
   permission_handler: ^13.0.2
   crypto: ^3.0.8
-  google_sign_in: ^6.2.1
   http: ^1.2.0
 
 dev_dependencies:

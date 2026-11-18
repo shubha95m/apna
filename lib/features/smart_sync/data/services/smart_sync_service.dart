@@ -2,7 +2,6 @@ import 'package:flutter/foundation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:uuid/uuid.dart';
-import 'email_sync_service.dart';
 import 'smart_sync_parser.dart';
 import 'sms_native_service.dart';
 
@@ -52,7 +51,6 @@ class SmartSyncService {
     required String userId,
     List<String>? customMessages,
     bool fetchFromDeviceSms = true,
-    bool fetchFromGmail = false,
   }) async {
     int billsCount = 0;
     int expensesCount = 0;
@@ -83,18 +81,6 @@ class SmartSyncService {
           }
         } catch (e) {
           debugPrint('Device SMS read error: $e');
-        }
-      }
-
-      // 1B. Fetch from Gmail API if requested
-      if (fetchFromGmail) {
-        try {
-          final emails = await EmailSyncService.fetchRecentBillEmails();
-          for (final em in emails) {
-            messagesToParse.add((text: em.snippet, sender: em.from, date: em.date));
-          }
-        } catch (e) {
-          debugPrint('Gmail sync notice: $e');
         }
       }
     }

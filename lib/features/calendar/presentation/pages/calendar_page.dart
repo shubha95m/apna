@@ -7,6 +7,7 @@ import 'package:apna/app/theme/app_typography.dart';
 import 'package:apna/features/authentication/presentation/providers/auth_providers.dart';
 import 'package:apna/features/documents/presentation/providers/document_providers.dart';
 import 'package:apna/features/smart_sync/presentation/providers/smart_sync_providers.dart';
+import 'package:apna/features/smart_sync/data/services/sms_native_service.dart';
 import '../../domain/entities/calendar_event_entity.dart';
 import '../providers/calendar_providers.dart';
 
@@ -186,10 +187,15 @@ class _CalendarPageState extends ConsumerState<CalendarPage> {
             tooltip: 'Sync 30-Day Bills & Deadlines',
             icon: const Icon(Icons.sync_rounded),
             onPressed: () async {
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(content: Text('Scanning recent messages & statement dates...')),
-              );
-              final res = await ref.read(smartSyncControllerProvider.notifier).runManualSync();
+              final hasPerm = await SmsNativeService.ensureSmsPermissionOrPrompt(context);
+              if (!hasPerm) return;
+
+              if (context.mounted) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(content: Text('Scanning recent messages & statement dates...')),
+                );
+              }
+              final res = await ref.read(smartSyncControllerProvider.notifier).runDeviceSmsSync();
               ref.invalidate(workspaceCalendarEventsProvider);
               if (context.mounted && res != null) {
                 ScaffoldMessenger.of(context).showSnackBar(
