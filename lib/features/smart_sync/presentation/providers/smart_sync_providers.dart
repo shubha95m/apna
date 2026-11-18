@@ -41,23 +41,17 @@ class SmartSyncController extends StateNotifier<AsyncValue<SmartSyncResult?>> {
 
     state = const AsyncValue.loading();
     try {
-      if (SmsNativeService.isSupportedPlatform) {
-        final hasPerm = await SmsNativeService.hasPermission();
-        if (!hasPerm) {
-          final granted = await SmsNativeService.requestPermission();
-          if (!granted) {
-            const deniedRes = SmartSyncResult(
-              billsImported: 0,
-              expensesImported: 0,
-              warrantiesImported: 0,
-              calendarEventsImported: 0,
-              duplicatesSkipped: 0,
-              message: 'SMS permission is required to read bank and utility messages.',
-            );
-            state = const AsyncValue.data(deniedRes);
-            return deniedRes;
-          }
-        }
+      if (!SmsNativeService.isSupportedPlatform) {
+        const safeRes = SmartSyncResult(
+          billsImported: 0,
+          expensesImported: 0,
+          warrantiesImported: 0,
+          calendarEventsImported: 0,
+          duplicatesSkipped: 0,
+          message: 'Please use "Paste Statement" or "Sync Gmail" to import bills cleanly.',
+        );
+        state = const AsyncValue.data(safeRes);
+        return safeRes;
       }
 
       final res = await SmartSyncService.syncLastMonth(
